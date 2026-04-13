@@ -1587,12 +1587,71 @@ async function startFindItemChallenge(alarm) {
 
   let lastFrame = null, motionDetected = false, holdStartTime = null, itemConfirmed = false;
   const HOLD_DURATION = 3000;
+  const BASELINE_FRAMES = 15; // Capture baseline over first ~0.5s
+  const SCENE_CHANGE_THRESHOLD = 0.12; // 12% of center pixels must differ from baseline
   const itemColors = getItemColorProfile(alarm.item);
+  let baselineFrames = [], baselineData = null, frameCount = 0;
+
+  $('#find-status').textContent = 'SCANNING ENVIRONMENT — DO NOT SHOW ITEM YET...';
+
+  function buildBaseline() {
+    // Average the baseline frames to get a stable reference of the scene without the item
+    const len = baselineFrames[0].data.length;
+    const avg = new Uint8ClampedArray(len);
+    for (let i = 0; i < len; i += 4) {
+      let rSum = 0, gSum = 0, bSum = 0;
+      for (const bf of baselineFrames) {
+        rSum += bf.data[i]; gSum += bf.data[i + 1]; bSum += bf.data[i + 2];
+      }
+      avg[i] = rSum / baselineFrames.length;
+      avg[i + 1] = gSum / baselineFrames.length;
+      avg[i + 2] = bSum / baselineFrames.length;
+      avg[i + 3] = 255;
+    }
+    return { data: avg, width: baselineFrames[0].width, height: baselineFrames[0].height };
+  }
+
+  function hasSignificantSceneChange(frame, baseline) {
+    // Check that the center of the frame looks significantly different from the baseline,
+    // meaning something new was introduced (the user brought an item into view)
+    const w = frame.width, h = frame.height;
+    const cx1 = Math.floor(w * 0.2), cx2 = Math.floor(w * 0.8);
+    const cy1 = Math.floor(h * 0.2), cy2 = Math.floor(h * 0.8);
+    let changed = 0, total = 0;
+    for (let y = cy1; y < cy2; y += 3) {
+      for (let x = cx1; x < cx2; x += 3) {
+        total++;
+        const i = (y * w + x) * 4;
+        const diff = Math.abs(frame.data[i] - baseline.data[i])
+          + Math.abs(frame.data[i + 1] - baseline.data[i + 1])
+          + Math.abs(frame.data[i + 2] - baseline.data[i + 2]);
+        if (diff > 60) changed++;
+      }
+    }
+    return changed / total > SCENE_CHANGE_THRESHOLD;
+  }
 
   function processFrame() {
     if (itemConfirmed) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    frameCount++;
+
+    // Phase 1: collect baseline frames (scene without the item)
+    if (frameCount <= BASELINE_FRAMES) {
+      baselineFrames.push(frame);
+      const pct = Math.round((frameCount / BASELINE_FRAMES) * 100);
+      $('#find-status').textContent = `SCANNING ENVIRONMENT... ${pct}%`;
+      if (frameCount === BASELINE_FRAMES) {
+        baselineData = buildBaseline();
+        baselineFrames = []; // free memory
+        $('#find-status').textContent = 'READY — NOW SHOW THE ITEM';
+      }
+      requestAnimationFrame(processFrame);
+      return;
+    }
+
+    // Motion detection (frame-to-frame)
     if (lastFrame) {
       let diffCount = 0;
       for (let i = 0; i < frame.data.length; i += 16) {
@@ -1602,8 +1661,15 @@ async function startFindItemChallenge(alarm) {
       if (diffCount / (frame.data.length / 16) > 0.02) { motionDetected = true; markCheck('check-movement'); }
     }
     lastFrame = frame;
-    const detected = detectItemByColor(frame, itemColors, canvas.width, canvas.height);
-    if (detected && motionDetected) {
+
+    // All three conditions must pass:
+    // 1. Color profile matches the requested item
+    // 2. Motion was detected (not a static image)
+    // 3. Scene changed significantly from baseline (a new object was introduced)
+    const colorMatch = detectItemByColor(frame, itemColors, canvas.width, canvas.height);
+    const sceneChanged = hasSignificantSceneChange(frame, baselineData);
+
+    if (colorMatch && motionDetected && sceneChanged) {
       if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
       const elapsed = Date.now() - holdStartTime;
       const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
@@ -1619,7 +1685,9 @@ async function startFindItemChallenge(alarm) {
         return;
       }
     } else {
-      if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); $('#find-status').textContent = 'KEEP THE ITEM IN FRAME...'; }
+      if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
+      if (!colorMatch) $('#find-status').textContent = 'LOOKING FOR ITEM...';
+      else if (!sceneChanged) $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
     }
     requestAnimationFrame(processFrame);
   }
