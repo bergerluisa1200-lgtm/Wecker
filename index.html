@@ -126,43 +126,49 @@
         <div class="clock-hex" id="clock-hex">#000000</div>
       </div>
 
-      <!-- Stats Banner -->
-      <div class="glass-panel stats-banner" id="stats-banner">
-        <div class="panel-header">
+      <!-- Stats Banner (collapsible) -->
+      <div class="glass-panel stats-banner collapsible" id="stats-banner">
+        <div class="panel-header collapsible-header" id="stats-toggle">
           <span class="panel-dot"></span>
           <span class="panel-title">YOUR STATS</span>
           <span class="panel-line"></span>
+          <svg class="collapse-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-number" id="stat-streak">0</div>
-            <div class="stat-desc">DAY STREAK</div>
+        <div class="collapsible-body" id="stats-body">
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-number" id="stat-streak">0</div>
+              <div class="stat-desc">DAY STREAK</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number" id="stat-total">0</div>
+              <div class="stat-desc">TOTAL DISMISSED</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number" id="stat-fastest">--</div>
+              <div class="stat-desc">FASTEST (s)</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number" id="stat-exercises">0</div>
+              <div class="stat-desc">EXERCISES DONE</div>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-number" id="stat-total">0</div>
-            <div class="stat-desc">TOTAL DISMISSED</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number" id="stat-fastest">--</div>
-            <div class="stat-desc">FASTEST (s)</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number" id="stat-exercises">0</div>
-            <div class="stat-desc">EXERCISES DONE</div>
-          </div>
+          <div class="streak-calendar-label">LAST 30 DAYS — <span style="color:var(--success);">&#9632;</span> alarm dismissed <span style="color:var(--text-muted);">&#9632;</span> no activity</div>
+          <div class="streak-calendar" id="streak-calendar"></div>
         </div>
-        <div class="streak-calendar-label">LAST 30 DAYS — <span style="color:var(--success);">&#9632;</span> alarm dismissed <span style="color:var(--text-muted);">&#9632;</span> no activity</div>
-        <div class="streak-calendar" id="streak-calendar"></div>
       </div>
 
-      <!-- Tomorrow's Challenge Preview -->
-      <div class="glass-panel tomorrow-preview" id="tomorrow-preview">
-        <div class="panel-header">
+      <!-- Tomorrow's Challenge Preview (collapsible) -->
+      <div class="glass-panel tomorrow-preview collapsible" id="tomorrow-preview">
+        <div class="panel-header collapsible-header" id="tomorrow-toggle">
           <span class="panel-dot"></span>
           <span class="panel-title">TOMORROW'S RANDOM CHALLENGE</span>
           <span class="panel-line"></span>
+          <svg class="collapse-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div id="tomorrow-content" class="tomorrow-content"></div>
+        <div class="collapsible-body" id="tomorrow-body">
+          <div id="tomorrow-content" class="tomorrow-content"></div>
+        </div>
       </div>
 
       <!-- Alarm Form -->

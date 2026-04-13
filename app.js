@@ -408,6 +408,20 @@ $('#btn-preview-sound').addEventListener('click', () => {
   }
 });
 
+// Collapsible panels (hidden by default)
+function setupCollapsible(toggleId, panelId, storageKey) {
+  const panel = $(`#${panelId}`);
+  const toggle = $(`#${toggleId}`);
+  const collapsed = localStorage.getItem(storageKey) !== 'open';
+  if (collapsed) panel.classList.add('collapsed');
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('collapsed');
+    localStorage.setItem(storageKey, panel.classList.contains('collapsed') ? 'closed' : 'open');
+  });
+}
+setupCollapsible('stats-toggle', 'stats-banner', 'wakeup-stats-open');
+setupCollapsible('tomorrow-toggle', 'tomorrow-preview', 'wakeup-tomorrow-open');
+
 // Gradual wake-up toggle
 $('#gradual-row').addEventListener('click', () => {
   const checkbox = $('#gradual-toggle');

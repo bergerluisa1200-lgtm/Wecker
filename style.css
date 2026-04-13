@@ -227,6 +227,21 @@ body {
 .streak-day.active { background: var(--success); border-color: var(--success); box-shadow: 0 0 6px rgba(var(--success-rgb), 0.4); }
 .streak-day.today { border-color: var(--primary); }
 
+/* Collapsible panels */
+.collapsible .collapsible-header { cursor: pointer; margin-bottom: 0; }
+.collapsible.collapsed .collapsible-header { margin-bottom: 0; }
+.collapsible .collapse-arrow {
+  width: 16px; height: 16px; flex-shrink: 0; transition: transform 0.3s;
+}
+.collapsible.collapsed .collapse-arrow { transform: rotate(-90deg); }
+.collapsible .collapsible-body {
+  max-height: 500px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease;
+  opacity: 1; margin-top: 1.25rem;
+}
+.collapsible.collapsed .collapsible-body {
+  max-height: 0; opacity: 0; margin-top: 0;
+}
+
 /* Tomorrow preview */
 .tomorrow-content {
   font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: var(--text-dim);
