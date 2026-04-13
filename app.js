@@ -674,7 +674,7 @@ $('#btn-dismiss-bedtime').addEventListener('click', () => showScreen('setup'));
 // ============================================================
 function checkGradualWakeup(now) {
   if (state.activeAlarm || state.gradualInterval) return;
-  const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   const currentMins = now.getHours() * 60 + now.getMinutes();
 
   state.alarms.forEach((alarm) => {
@@ -751,7 +751,7 @@ function shouldAlarmFireToday(alarm, now) {
 
 function checkAlarms(now) {
   if (state.activeAlarm) return;
-  const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
   const matchIdx = state.alarms.findIndex((a) => a.time === currentTime && shouldAlarmFireToday(a, now));
   if (matchIdx >= 0) {
@@ -793,6 +793,10 @@ function triggerAlarm(alarm, alarmIndex) {
     Object.assign(resolved, state.multiSteps[0]);
   } else if (alarm.mode === 'math') {
     resolved.challengeType = 'math';
+  } else if (alarm.mode === 'exercise') {
+    resolved.challengeType = 'exercise';
+  } else if (alarm.mode === 'find-item') {
+    resolved.challengeType = 'find-item';
   }
 
   state.activeAlarm = resolved;
@@ -1227,17 +1231,23 @@ async function startFindItemChallenge(alarm) {
   });
 
   try {
-    state.cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: 640, height: 480 },
-    });
+    try {
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: 640, height: 480 },
+      });
+    } catch (_) {
+      // Fallback: some mobile browsers reject facingMode constraint
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
     video.srcObject = state.cameraStream;
+    video.setAttribute('playsinline', 'true');
     await video.play();
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
     $('#find-status').textContent = 'CAMERA ACTIVE — SHOW THE ITEM';
     markCheck('check-camera');
   } catch (err) {
-    $('#find-status').textContent = 'CAMERA ACCESS DENIED';
+    $('#find-status').textContent = 'CAMERA ACCESS DENIED — ' + err.message;
     return;
   }
 
@@ -1368,15 +1378,20 @@ async function startExerciseChallenge(alarm) {
   const canvasCtx = canvas.getContext('2d');
 
   try {
-    state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    try {
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    } catch (_) {
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
     video.srcObject = state.cameraStream;
+    video.setAttribute('playsinline', 'true');
     await video.play();
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
     $('#exercise-status').textContent = 'LOADING POSE DETECTION...';
     markCheck('check-ex-camera');
   } catch (err) {
-    $('#exercise-status').textContent = 'CAMERA ACCESS DENIED';
+    $('#exercise-status').textContent = 'CAMERA ACCESS DENIED — ' + err.message;
     return;
   }
 
