@@ -1639,7 +1639,7 @@ function getItemColorProfile(itemId) {
     book: { detectByEdges: true, threshold: 0.10 },
     notebook: { detectByEdges: true, threshold: 0.10 },
     // Brown/tan items
-    shoe: { hueMin: 15, hueMax: 45, satMin: 20, valMin: 15, threshold: 0.08 },
+    shoe: { hueMin: 15, hueMax: 45, satMin: 20, valMin: 15, threshold: 0.10 },
     wallet: { hueMin: 10, hueMax: 40, satMin: 20, valMin: 10, threshold: 0.06 },
     // White items — low saturation, high value
     cup: { lowSat: true, valMin: 70, satMax: 20, threshold: 0.08 },
@@ -1656,6 +1656,12 @@ function detectItemByColor(imageData, profile, width, height) {
   const cx1 = Math.floor(width * 0.15), cx2 = Math.floor(width * 0.85);
   const cy1 = Math.floor(height * 0.15), cy2 = Math.floor(height * 0.85);
   let matchCount = 0, edgeCount = 0, totalPixels = 0;
+
+  // Grid for spatial concentration check (4x4)
+  const GRID = 4;
+  const gridCounts = Array.from({ length: GRID * GRID }, () => 0);
+  const gridTotals = Array.from({ length: GRID * GRID }, () => 0);
+  const gridW = (cx2 - cx1) / GRID, gridH = (cy2 - cy1) / GRID;
 
   // For variance detection: sample baseline from edges of frame
   let edgeR = 0, edgeG = 0, edgeB = 0, edgeSamples = 0;
@@ -1675,21 +1681,24 @@ function detectItemByColor(imageData, profile, width, height) {
       totalPixels++;
       const i = (y * width + x) * 4;
       const r = data[i], g = data[i + 1], b = data[i + 2];
+      const gx = Math.min(Math.floor((x - cx1) / gridW), GRID - 1);
+      const gy = Math.min(Math.floor((y - cy1) / gridH), GRID - 1);
+      const gi = gy * GRID + gx;
+      gridTotals[gi]++;
 
+      let matched = false;
       if (profile.lowSat) {
-        // Detect white/light objects by low saturation + high brightness
         const hsv = rgbToHsv(r, g, b);
-        if (hsv[1] <= (profile.satMax || 20) && hsv[2] >= profile.valMin) matchCount++;
+        if (hsv[1] <= (profile.satMax || 20) && hsv[2] >= profile.valMin) matched = true;
       } else if (profile.hueMin !== undefined) {
         const hsv = rgbToHsv(r, g, b);
         let hueMatch;
         if (profile.hueWrap) {
-          // For red: hue wraps around 360 (e.g., 340-360 + 0-40)
           hueMatch = hsv[0] >= profile.hueMin || hsv[0] <= profile.hueMax;
         } else {
           hueMatch = hsv[0] >= profile.hueMin && hsv[0] <= profile.hueMax;
         }
-        if (hueMatch && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matchCount++;
+        if (hueMatch && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matched = true;
       } else if (profile.detectByEdges) {
         if (x > cx1 + 3 && y > cy1 + 3) {
           const px = (y * width + (x - 3)) * 4, py = ((y - 3) * width + x) * 4;
@@ -1698,14 +1707,38 @@ function detectItemByColor(imageData, profile, width, height) {
           if (dx + dy > 70) edgeCount++;
         }
       } else if (profile.detectByVariance) {
-        // Detect pixels that differ significantly from the frame edges (background)
         const diff = Math.abs(r - edgeR) + Math.abs(g - edgeG) + Math.abs(b - edgeB);
-        if (diff > 80) matchCount++;
+        if (diff > 80) matched = true;
       }
+
+      if (matched) { matchCount++; gridCounts[gi]++; }
     }
   }
+
   if (profile.detectByEdges) return edgeCount / totalPixels > (profile.threshold || 0.10);
-  return matchCount / totalPixels > (profile.threshold || 0.10);
+  const ratio = matchCount / totalPixels;
+  if (ratio <= (profile.threshold || 0.10)) return false;
+
+  // Spatial concentration check: reject if matches are spread evenly across the frame
+  // (e.g. pointing camera at feet/floor). A held object creates a cluster where some
+  // grid cells have high density and others have low density.
+  const cellRatios = gridCounts.map((c, i) => gridTotals[i] > 0 ? c / gridTotals[i] : 0);
+  const avgRatio = ratio;
+  const maxCellRatio = Math.max(...cellRatios);
+  const minCellRatio = Math.min(...cellRatios);
+
+  // Count how many cells have significant matches (> half the average)
+  const activeCells = cellRatios.filter(r => r > avgRatio * 0.5).length;
+  const totalCells = GRID * GRID;
+
+  // If matches fill nearly every cell evenly, it's likely background/floor, not a held object.
+  // A real held object should leave some cells mostly empty.
+  // Reject if: matches are spread across >75% of cells AND no cell stands out significantly
+  if (activeCells > totalCells * 0.75 && maxCellRatio < avgRatio * 2.0 && (maxCellRatio - minCellRatio) < 0.25) {
+    return false;
+  }
+
+  return true;
 }
 
 function rgbToHsv(r, g, b) {
