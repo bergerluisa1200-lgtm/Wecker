@@ -1542,14 +1542,84 @@ $('#btn-start-challenge').addEventListener('click', () => {
 });
 
 // ============================================================
-// FIND ITEM CHALLENGE
+// FIND ITEM CHALLENGE — COCO-SSD ML Object Detection
 // ============================================================
+
+// Map item IDs to COCO-SSD class labels they should match
+const ITEM_COCO_LABELS = {
+  shoe: null, // not in COCO — use scene-change fallback
+  sock: null,
+  hat: null,
+  jacket: null,
+  sunglasses: null,
+  watch: ['clock'],
+  backpack: ['backpack'],
+  scarf: ['tie'],
+  belt: null,
+  plant: ['potted plant'],
+  pillow: null,
+  towel: null,
+  candle: null,
+  remote: ['remote'],
+  umbrella: ['umbrella'],
+  keys: null,
+  mirror: null,
+  'stuffed-animal': ['teddy bear'],
+  flashlight: null,
+  battery: null,
+  'rubber-band': null,
+  cup: ['cup'],
+  spoon: ['spoon'],
+  fork: ['fork'],
+  plate: ['bowl', 'dining table'],
+  bottle: ['bottle'],
+  fruit: ['apple', 'orange', 'banana'],
+  banana: ['banana'],
+  toothbrush: ['toothbrush'],
+  soap: null,
+  comb: null,
+  book: ['book'],
+  pen: null,
+  notebook: ['book'],
+  scissors: ['scissors'],
+  headphones: null,
+  charger: null,
+  mouse: ['mouse'],
+  wallet: null,
+  paperclip: null,
+  stapler: null,
+};
+
+let cocoModel = null;
+let cocoModelLoading = false;
+
+async function loadCocoModel() {
+  if (cocoModel) return cocoModel;
+  if (cocoModelLoading) {
+    // Wait for in-progress load
+    while (cocoModelLoading) await new Promise(r => setTimeout(r, 100));
+    return cocoModel;
+  }
+  cocoModelLoading = true;
+  try {
+    cocoModel = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+  } catch (e) {
+    console.error('COCO-SSD failed to load:', e);
+    cocoModel = null;
+  }
+  cocoModelLoading = false;
+  return cocoModel;
+}
+
+function itemUsesML(itemId) {
+  return ITEM_COCO_LABELS[itemId] != null;
+}
+
 async function startFindItemChallenge(alarm) {
   showScreen('find-item');
   const item = ITEMS.find((it) => it.id === alarm.item);
   $('#find-item-name').textContent = item ? `${item.icon} ${item.name}` : alarm.item;
 
-  // Multi progress
   renderMultiProgress('find-multi-progress');
 
   const video = $('#find-video');
@@ -1560,13 +1630,23 @@ async function startFindItemChallenge(alarm) {
     $(`#${id}`).classList.remove('passed');
   });
 
+  const useML = itemUsesML(alarm.item);
+  const cocoLabels = ITEM_COCO_LABELS[alarm.item] || [];
+  const MIN_CONFIDENCE = 0.45;
+
+  // Start loading the ML model in parallel with camera setup
+  let model = null;
+  if (useML) {
+    $('#find-status').textContent = 'LOADING AI MODEL...';
+    model = await loadCocoModel();
+  }
+
   try {
     try {
       state.cameraStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: 640, height: 480 },
       });
     } catch (_) {
-      // Fallback: some mobile browsers reject facingMode constraint
       state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
     }
     video.srcObject = state.cameraStream;
@@ -1574,7 +1654,6 @@ async function startFindItemChallenge(alarm) {
     await video.play();
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
-    $('#find-status').textContent = 'CAMERA ACTIVE — SHOW THE ITEM';
     markCheck('check-camera');
   } catch (err) {
     $('#find-status').textContent = 'CAMERA ACCESS DENIED — ' + err.message;
@@ -1587,22 +1666,31 @@ async function startFindItemChallenge(alarm) {
 
   let lastFrame = null, motionDetected = false, holdStartTime = null, itemConfirmed = false;
   const HOLD_DURATION = 3000;
-  const BASELINE_FRAMES = 15; // Capture baseline over first ~0.5s
-  const SCENE_CHANGE_THRESHOLD = 0.12; // 12% of center pixels must differ from baseline
-  const itemColors = getItemColorProfile(alarm.item);
-  let baselineFrames = [], baselineData = null, frameCount = 0;
+  let detecting = false; // Prevent overlapping ML calls
 
-  $('#find-status').textContent = 'SCANNING ENVIRONMENT — DO NOT SHOW ITEM YET...';
+  if (useML && !model) {
+    // ML failed to load — tell user, fall back to scene-change mode
+    $('#find-status').textContent = 'AI MODEL UNAVAILABLE — USING BACKUP DETECTION';
+  } else if (useML) {
+    $('#find-status').textContent = 'AI READY — SHOW THE ITEM';
+  }
+
+  // Scene-change baseline for non-ML items
+  const BASELINE_FRAMES = 15;
+  const SCENE_CHANGE_THRESHOLD = 0.12;
+  let baselineFrames = [], baselineData = null, frameCount = 0;
+  const useFallback = !useML || !model;
+
+  if (useFallback) {
+    $('#find-status').textContent = 'SCANNING ENVIRONMENT — DO NOT SHOW ITEM YET...';
+  }
 
   function buildBaseline() {
-    // Average the baseline frames to get a stable reference of the scene without the item
     const len = baselineFrames[0].data.length;
     const avg = new Uint8ClampedArray(len);
     for (let i = 0; i < len; i += 4) {
       let rSum = 0, gSum = 0, bSum = 0;
-      for (const bf of baselineFrames) {
-        rSum += bf.data[i]; gSum += bf.data[i + 1]; bSum += bf.data[i + 2];
-      }
+      for (const bf of baselineFrames) { rSum += bf.data[i]; gSum += bf.data[i + 1]; bSum += bf.data[i + 2]; }
       avg[i] = rSum / baselineFrames.length;
       avg[i + 1] = gSum / baselineFrames.length;
       avg[i + 2] = bSum / baselineFrames.length;
@@ -1611,9 +1699,8 @@ async function startFindItemChallenge(alarm) {
     return { data: avg, width: baselineFrames[0].width, height: baselineFrames[0].height };
   }
 
-  function hasSignificantSceneChange(frame, baseline) {
-    // Check that the center of the frame looks significantly different from the baseline,
-    // meaning something new was introduced (the user brought an item into view)
+  function hasSceneChange(frame) {
+    if (!baselineData) return false;
     const w = frame.width, h = frame.height;
     const cx1 = Math.floor(w * 0.2), cx2 = Math.floor(w * 0.8);
     const cy1 = Math.floor(h * 0.2), cy2 = Math.floor(h * 0.8);
@@ -1622,36 +1709,36 @@ async function startFindItemChallenge(alarm) {
       for (let x = cx1; x < cx2; x += 3) {
         total++;
         const i = (y * w + x) * 4;
-        const diff = Math.abs(frame.data[i] - baseline.data[i])
-          + Math.abs(frame.data[i + 1] - baseline.data[i + 1])
-          + Math.abs(frame.data[i + 2] - baseline.data[i + 2]);
+        const diff = Math.abs(frame.data[i] - baselineData.data[i])
+          + Math.abs(frame.data[i + 1] - baselineData.data[i + 1])
+          + Math.abs(frame.data[i + 2] - baselineData.data[i + 2]);
         if (diff > 60) changed++;
       }
     }
     return changed / total > SCENE_CHANGE_THRESHOLD;
   }
 
-  function processFrame() {
+  function drawDetectionBox(prediction) {
+    const [x, y, w, h] = prediction.bbox;
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 14px Orbitron, monospace';
+    const label = `${prediction.class} ${Math.round(prediction.score * 100)}%`;
+    const textW = ctx.measureText(label).width;
+    ctx.fillRect(x, y - 22, textW + 10, 22);
+    ctx.fillStyle = '#080e1a';
+    ctx.fillText(label, x + 5, y - 6);
+  }
+
+  async function processFrame() {
     if (itemConfirmed) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
     frameCount++;
 
-    // Phase 1: collect baseline frames (scene without the item)
-    if (frameCount <= BASELINE_FRAMES) {
-      baselineFrames.push(frame);
-      const pct = Math.round((frameCount / BASELINE_FRAMES) * 100);
-      $('#find-status').textContent = `SCANNING ENVIRONMENT... ${pct}%`;
-      if (frameCount === BASELINE_FRAMES) {
-        baselineData = buildBaseline();
-        baselineFrames = []; // free memory
-        $('#find-status').textContent = 'READY — NOW SHOW THE ITEM';
-      }
-      requestAnimationFrame(processFrame);
-      return;
-    }
-
-    // Motion detection (frame-to-frame)
+    // Motion detection
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
     if (lastFrame) {
       let diffCount = 0;
       for (let i = 0; i < frame.data.length; i += 16) {
@@ -1662,166 +1749,88 @@ async function startFindItemChallenge(alarm) {
     }
     lastFrame = frame;
 
-    // All three conditions must pass:
-    // 1. Color profile matches the requested item
-    // 2. Motion was detected (not a static image)
-    // 3. Scene changed significantly from baseline (a new object was introduced)
-    const colorMatch = detectItemByColor(frame, itemColors, canvas.width, canvas.height);
-    const sceneChanged = hasSignificantSceneChange(frame, baselineData);
+    // ---- ML detection path ----
+    if (useML && model && !detecting) {
+      detecting = true;
+      try {
+        const predictions = await model.detect(video);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // redraw clean frame
+        let found = false;
+        for (const pred of predictions) {
+          if (cocoLabels.includes(pred.class) && pred.score >= MIN_CONFIDENCE) {
+            drawDetectionBox(pred);
+            found = true;
+          }
+        }
 
-    if (colorMatch && motionDetected && sceneChanged) {
-      if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
-      const elapsed = Date.now() - holdStartTime;
-      const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
-      $('#find-countdown').textContent = remaining;
-      $('#find-status').textContent = `ITEM DETECTED — HOLD STEADY... ${remaining}s`;
-      if (elapsed >= HOLD_DURATION) {
-        itemConfirmed = true;
-        markCheck('check-item');
-        clearInterval(tsInterval);
-        $('#find-countdown').textContent = '\u2713';
-        $('#find-status').textContent = 'ITEM CONFIRMED';
-        setTimeout(() => { stopCamera(); onChallengeStepDone(); }, 1000);
+        if (found && motionDetected) {
+          if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
+          const elapsed = Date.now() - holdStartTime;
+          const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
+          $('#find-countdown').textContent = remaining;
+          $('#find-status').textContent = `ITEM DETECTED — HOLD STEADY... ${remaining}s`;
+          if (elapsed >= HOLD_DURATION) {
+            itemConfirmed = true;
+            markCheck('check-item');
+            clearInterval(tsInterval);
+            $('#find-countdown').textContent = '\u2713';
+            $('#find-status').textContent = 'ITEM CONFIRMED';
+            setTimeout(() => { stopCamera(); onChallengeStepDone(); }, 1000);
+            detecting = false;
+            return;
+          }
+        } else {
+          if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
+          $('#find-status').textContent = 'LOOKING FOR ITEM...';
+        }
+      } catch (e) {
+        console.error('Detection error:', e);
+      }
+      detecting = false;
+    }
+
+    // ---- Fallback: scene-change detection for items COCO-SSD can't recognize ----
+    if (useFallback) {
+      if (frameCount <= BASELINE_FRAMES) {
+        baselineFrames.push(frame);
+        const pct = Math.round((frameCount / BASELINE_FRAMES) * 100);
+        $('#find-status').textContent = `SCANNING ENVIRONMENT... ${pct}%`;
+        if (frameCount === BASELINE_FRAMES) {
+          baselineData = buildBaseline();
+          baselineFrames = [];
+          $('#find-status').textContent = 'READY — NOW SHOW THE ITEM';
+        }
+        requestAnimationFrame(processFrame);
         return;
       }
-    } else {
-      if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
-      if (!colorMatch) $('#find-status').textContent = 'LOOKING FOR ITEM...';
-      else if (!sceneChanged) $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
+
+      const sceneChanged = hasSceneChange(frame);
+      if (sceneChanged && motionDetected) {
+        if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
+        const elapsed = Date.now() - holdStartTime;
+        const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
+        $('#find-countdown').textContent = remaining;
+        $('#find-status').textContent = `CHANGE DETECTED — HOLD STEADY... ${remaining}s`;
+        if (elapsed >= HOLD_DURATION) {
+          itemConfirmed = true;
+          markCheck('check-item');
+          clearInterval(tsInterval);
+          $('#find-countdown').textContent = '\u2713';
+          $('#find-status').textContent = 'ITEM CONFIRMED';
+          setTimeout(() => { stopCamera(); onChallengeStepDone(); }, 1000);
+          return;
+        }
+      } else {
+        if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
+        if (!sceneChanged) $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
+      }
     }
+
     requestAnimationFrame(processFrame);
   }
   requestAnimationFrame(processFrame);
 }
 
-function getItemColorProfile(itemId) {
-  const profiles = {
-    // Green items — hue 60-160, need decent saturation to be actually green
-    plant: { hueMin: 55, hueMax: 165, satMin: 25, valMin: 20, threshold: 0.10 },
-    // Red/orange items
-    fruit: { hueMin: 340, hueMax: 40, satMin: 35, valMin: 35, threshold: 0.06, hueWrap: true },
-    banana: { hueMin: 30, hueMax: 65, satMin: 35, valMin: 40, threshold: 0.06 },
-    // Blue items
-    towel: { hueMin: 180, hueMax: 260, satMin: 25, valMin: 20, threshold: 0.08 },
-    // Rectangular — use edge detection
-    book: { detectByEdges: true, threshold: 0.10 },
-    notebook: { detectByEdges: true, threshold: 0.10 },
-    // Brown/tan items
-    shoe: { hueMin: 15, hueMax: 45, satMin: 20, valMin: 15, threshold: 0.10 },
-    wallet: { hueMin: 10, hueMax: 40, satMin: 20, valMin: 10, threshold: 0.06 },
-    // White items — low saturation, high value
-    cup: { lowSat: true, valMin: 70, satMax: 20, threshold: 0.08 },
-    plate: { lowSat: true, valMin: 70, satMax: 20, threshold: 0.08 },
-    soap: { lowSat: true, valMin: 60, satMax: 25, threshold: 0.06 },
-    pillow: { lowSat: true, valMin: 60, satMax: 25, threshold: 0.08 },
-  };
-  // Generic fallback: use edge + color variance detection — NOT brightness
-  return profiles[itemId] || { detectByVariance: true, threshold: 0.12 };
-}
-
-function detectItemByColor(imageData, profile, width, height) {
-  const data = imageData.data;
-  const cx1 = Math.floor(width * 0.15), cx2 = Math.floor(width * 0.85);
-  const cy1 = Math.floor(height * 0.15), cy2 = Math.floor(height * 0.85);
-  let matchCount = 0, edgeCount = 0, totalPixels = 0;
-
-  // Grid for spatial concentration check (4x4)
-  const GRID = 4;
-  const gridCounts = Array.from({ length: GRID * GRID }, () => 0);
-  const gridTotals = Array.from({ length: GRID * GRID }, () => 0);
-  const gridW = (cx2 - cx1) / GRID, gridH = (cy2 - cy1) / GRID;
-
-  // For variance detection: sample baseline from edges of frame
-  let edgeR = 0, edgeG = 0, edgeB = 0, edgeSamples = 0;
-  if (profile.detectByVariance) {
-    for (let x = 0; x < width; x += 8) {
-      for (const y of [2, height - 3]) {
-        const i = (y * width + x) * 4;
-        edgeR += data[i]; edgeG += data[i + 1]; edgeB += data[i + 2];
-        edgeSamples++;
-      }
-    }
-    edgeR /= edgeSamples; edgeG /= edgeSamples; edgeB /= edgeSamples;
-  }
-
-  for (let y = cy1; y < cy2; y += 3) {
-    for (let x = cx1; x < cx2; x += 3) {
-      totalPixels++;
-      const i = (y * width + x) * 4;
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      const gx = Math.min(Math.floor((x - cx1) / gridW), GRID - 1);
-      const gy = Math.min(Math.floor((y - cy1) / gridH), GRID - 1);
-      const gi = gy * GRID + gx;
-      gridTotals[gi]++;
-
-      let matched = false;
-      if (profile.lowSat) {
-        const hsv = rgbToHsv(r, g, b);
-        if (hsv[1] <= (profile.satMax || 20) && hsv[2] >= profile.valMin) matched = true;
-      } else if (profile.hueMin !== undefined) {
-        const hsv = rgbToHsv(r, g, b);
-        let hueMatch;
-        if (profile.hueWrap) {
-          hueMatch = hsv[0] >= profile.hueMin || hsv[0] <= profile.hueMax;
-        } else {
-          hueMatch = hsv[0] >= profile.hueMin && hsv[0] <= profile.hueMax;
-        }
-        if (hueMatch && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matched = true;
-      } else if (profile.detectByEdges) {
-        if (x > cx1 + 3 && y > cy1 + 3) {
-          const px = (y * width + (x - 3)) * 4, py = ((y - 3) * width + x) * 4;
-          const dx = Math.abs(r - data[px]) + Math.abs(g - data[px + 1]) + Math.abs(b - data[px + 2]);
-          const dy = Math.abs(r - data[py]) + Math.abs(g - data[py + 1]) + Math.abs(b - data[py + 2]);
-          if (dx + dy > 70) edgeCount++;
-        }
-      } else if (profile.detectByVariance) {
-        const diff = Math.abs(r - edgeR) + Math.abs(g - edgeG) + Math.abs(b - edgeB);
-        if (diff > 80) matched = true;
-      }
-
-      if (matched) { matchCount++; gridCounts[gi]++; }
-    }
-  }
-
-  if (profile.detectByEdges) return edgeCount / totalPixels > (profile.threshold || 0.10);
-  const ratio = matchCount / totalPixels;
-  if (ratio <= (profile.threshold || 0.10)) return false;
-
-  // Spatial concentration check: reject if matches are spread evenly across the frame
-  // (e.g. pointing camera at feet/floor). A held object creates a cluster where some
-  // grid cells have high density and others have low density.
-  const cellRatios = gridCounts.map((c, i) => gridTotals[i] > 0 ? c / gridTotals[i] : 0);
-  const avgRatio = ratio;
-  const maxCellRatio = Math.max(...cellRatios);
-  const minCellRatio = Math.min(...cellRatios);
-
-  // Count how many cells have significant matches (> half the average)
-  const activeCells = cellRatios.filter(r => r > avgRatio * 0.5).length;
-  const totalCells = GRID * GRID;
-
-  // If matches fill nearly every cell evenly, it's likely background/floor, not a held object.
-  // A real held object should leave some cells mostly empty.
-  // Reject if: matches are spread across >75% of cells AND no cell stands out significantly
-  if (activeCells > totalCells * 0.75 && maxCellRatio < avgRatio * 2.0 && (maxCellRatio - minCellRatio) < 0.25) {
-    return false;
-  }
-
-  return true;
-}
-
-function rgbToHsv(r, g, b) {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-  let h = 0;
-  const s = max === 0 ? 0 : (d / max) * 100, v = max * 100;
-  if (d !== 0) {
-    if (max === r) h = 60 * (((g - b) / d) % 6);
-    else if (max === g) h = 60 * ((b - r) / d + 2);
-    else h = 60 * ((r - g) / d + 4);
-  }
-  if (h < 0) h += 360;
-  return [h, s, v];
-}
 
 function markCheck(id) { $(`#${id}`).classList.add('passed'); }
 
