@@ -4,8 +4,8 @@
   "description": "The alarm clock that makes you actually get out of bed. Dismiss by finding items, doing exercises, or solving math.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#050510",
-  "theme_color": "#00f0ff",
+  "background_color": "#0c0820",
+  "theme_color": "#7c5cf5",
   "orientation": "portrait",
   "icons": [
     {
