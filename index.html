@@ -158,6 +158,49 @@
         </div>
       </div>
 
+      <!-- Achievements / Badges (collapsible) -->
+      <div class="glass-panel badges-banner collapsible" id="badges-banner">
+        <div class="panel-header collapsible-header" id="badges-toggle">
+          <span class="panel-dot"></span>
+          <span class="panel-title">ACHIEVEMENTS <span id="badges-count" class="badge-count-label">0 / 0</span></span>
+          <span class="panel-line"></span>
+          <svg class="collapse-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="collapsible-body" id="badges-body">
+          <div class="badges-grid" id="badges-grid"></div>
+        </div>
+      </div>
+
+      <!-- Sleep Stats Dashboard (collapsible) -->
+      <div class="glass-panel sleep-dashboard collapsible" id="sleep-dashboard">
+        <div class="panel-header collapsible-header" id="dashboard-toggle">
+          <span class="panel-dot"></span>
+          <span class="panel-title">SLEEP DASHBOARD</span>
+          <span class="panel-line"></span>
+          <svg class="collapse-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="collapsible-body" id="dashboard-body">
+          <div class="dashboard-stats-row">
+            <div class="dash-stat">
+              <div class="dash-stat-value" id="dash-avg-time">--</div>
+              <div class="dash-stat-label">AVG WAKE TIME</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-value" id="dash-avg-dismiss">--</div>
+              <div class="dash-stat-label">AVG DISMISS (s)</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-value" id="dash-success-rate">--</div>
+              <div class="dash-stat-label">NO-PENALTY RATE</div>
+            </div>
+          </div>
+          <div class="dashboard-chart-label">DISMISS TIME — LAST 14 DAYS</div>
+          <canvas id="dashboard-chart" width="600" height="180"></canvas>
+          <div class="dashboard-chart-label" style="margin-top:1rem;">CHALLENGE TYPE BREAKDOWN</div>
+          <canvas id="challenge-chart" width="600" height="140"></canvas>
+        </div>
+      </div>
+
       <!-- Tomorrow's Challenge Preview (collapsible) -->
       <div class="glass-panel tomorrow-preview collapsible" id="tomorrow-preview">
         <div class="panel-header collapsible-header" id="tomorrow-toggle">
@@ -234,6 +277,10 @@
             <button class="mode-btn" data-mode="math">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               MATH
+            </button>
+            <button class="mode-btn" data-mode="typing">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="14" y2="12"/><line x1="6" y1="16" x2="10" y2="16"/></svg>
+              TYPING
             </button>
             <button class="mode-btn" data-mode="multi">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -475,6 +522,27 @@
     </div>
   </div>
 
+  <!-- ==================== TYPING CHALLENGE SCREEN ==================== -->
+  <div id="screen-typing" class="screen">
+    <div class="container challenge-container">
+      <div class="challenge-header">
+        <div class="challenge-tag">TYPING VERIFICATION</div>
+        <div id="typing-multi-progress" class="multi-progress hidden"></div>
+        <h2>Type the Paragraph</h2>
+        <p class="challenge-sub">Type the entire text accurately to dismiss the alarm.</p>
+      </div>
+      <div class="glass-panel typing-panel">
+        <div id="typing-source" class="typing-source"></div>
+        <textarea id="typing-input" class="typing-input" placeholder="Start typing here..." rows="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+        <div class="typing-stats">
+          <span id="typing-accuracy">Accuracy: 0%</span>
+          <span id="typing-progress">Progress: 0%</span>
+        </div>
+        <div id="typing-feedback" class="typing-feedback hidden"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== SUCCESS SCREEN ==================== -->
   <div id="screen-success" class="screen">
     <div class="container success-container">
@@ -485,6 +553,7 @@
       </div>
       <h1 class="success-title">ALARM DISMISSED</h1>
       <p class="success-subtitle">Mission complete. You're operational.</p>
+      <div class="motivational-quote" id="motivational-quote"></div>
       <div class="glass-panel success-stats" id="success-stats"></div>
       <div class="success-actions">
         <button id="btn-share" class="btn btn-secondary">

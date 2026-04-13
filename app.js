@@ -72,6 +72,63 @@ const EXERCISES = [
   { id: 'squats-30', name: '30 Squats', type: 'squats', count: 30, difficulty: 'hard' },
 ];
 
+const TYPING_PARAGRAPHS = [
+  "The human brain is the most complex organ in the body, containing approximately 86 billion neurons. Each neuron can form thousands of connections with other neurons, creating an intricate network that processes information at remarkable speeds. This network is responsible for everything from basic bodily functions to complex thought and creativity. During sleep, the brain consolidates memories and clears out waste products that accumulate during waking hours. Studies have shown that getting adequate sleep improves learning, problem-solving abilities, and emotional regulation. The brain continues to develop and change throughout life, a property known as neuroplasticity.",
+  "Photosynthesis is the process by which plants convert sunlight into chemical energy. Chlorophyll, the green pigment in leaves, absorbs light energy primarily from the red and blue portions of the visible spectrum. This energy drives a series of chemical reactions that convert carbon dioxide and water into glucose and oxygen. The glucose produced serves as fuel for the plant's metabolic processes and growth. Photosynthesis is responsible for producing the oxygen that makes up about 21 percent of Earth's atmosphere. Without this process, life as we know it on Earth would not be possible.",
+  "The ocean covers approximately 71 percent of the Earth's surface and contains about 97 percent of all water on the planet. Ocean currents act as a massive conveyor belt, distributing heat energy around the globe and regulating climate patterns. The deep ocean remains one of the least explored regions on Earth, with scientists estimating that over 80 percent of it is unmapped and unobserved. Marine ecosystems support an incredible diversity of life, from microscopic plankton to the largest animal ever known, the blue whale. Coral reefs, sometimes called the rainforests of the sea, support roughly 25 percent of all marine species. Rising ocean temperatures and acidification pose significant threats to these vital ecosystems.",
+  "The theory of general relativity, published by Albert Einstein in 1915, fundamentally changed our understanding of gravity. Rather than being a force between masses, gravity is described as the curvature of spacetime caused by mass and energy. This theory predicted several phenomena that were later confirmed, including the bending of light around massive objects and the existence of gravitational waves. Black holes, regions where spacetime curvature becomes so extreme that nothing can escape, are a direct consequence of Einstein's equations. In 2019, the Event Horizon Telescope captured the first-ever image of a black hole, located in the galaxy M87. General relativity remains one of the two pillars of modern physics alongside quantum mechanics.",
+  "The Amazon Rainforest is the largest tropical rainforest in the world, spanning across nine countries in South America. It produces approximately 20 percent of the world's oxygen and is home to an estimated 10 percent of all known species on Earth. The forest plays a crucial role in regulating global climate by absorbing massive amounts of carbon dioxide. Indigenous communities have lived in the Amazon for thousands of years, developing sophisticated knowledge of medicinal plants and sustainable living practices. Deforestation, primarily driven by agriculture and logging, threatens the forest's ability to function as a carbon sink. Scientists warn that continued destruction could push the Amazon past a tipping point, transforming it from rainforest into savanna.",
+  "The human immune system is a complex network of cells, tissues, and organs that work together to defend the body against harmful pathogens. White blood cells, or leukocytes, are the primary soldiers of the immune system, identifying and destroying foreign invaders. The system has two main components: innate immunity, which provides immediate but non-specific defense, and adaptive immunity, which develops targeted responses to specific threats. Vaccines work by training the adaptive immune system to recognize and fight particular pathogens without causing disease. The gut microbiome, containing trillions of bacteria, plays a significant role in immune function and overall health. Regular exercise, adequate sleep, and proper nutrition all contribute to maintaining a strong immune system.",
+  "The history of the internet began in the 1960s with the development of ARPANET, a project funded by the United States Department of Defense. The original network connected just four university computers and was designed to be resilient against partial outages. Tim Berners-Lee invented the World Wide Web in 1989, creating the system of hyperlinked documents that made the internet accessible to everyday users. The introduction of web browsers in the early 1990s sparked explosive growth in internet adoption worldwide. Today, over five billion people use the internet, fundamentally transforming communication, commerce, education, and entertainment. The development of mobile technology has made internet access possible from virtually anywhere on the planet.",
+  "Volcanoes are geological formations created when magma from deep within the Earth rises to the surface through cracks in the crust. There are approximately 1,500 potentially active volcanoes worldwide, with about 50 to 70 erupting each year. Volcanic eruptions can be incredibly destructive, producing lava flows, ash clouds, and pyroclastic flows that travel at hundreds of kilometers per hour. However, volcanic activity also provides essential benefits, including the creation of fertile soil and the formation of new land. The Ring of Fire, a horseshoe-shaped zone around the Pacific Ocean, contains approximately 75 percent of the world's active volcanoes. Scientists monitor volcanic activity using seismographs, satellite imagery, and gas measurements to predict eruptions and protect nearby populations.",
+  "Music has been a fundamental part of human culture for at least 40,000 years, with ancient flutes carved from bone being among the oldest known instruments. Research shows that listening to music activates multiple areas of the brain simultaneously, including regions responsible for movement, emotion, and memory. Learning to play a musical instrument has been linked to improved cognitive function, enhanced memory, and better academic performance in children. Music therapy is now used in clinical settings to help patients with conditions ranging from depression to Parkinson's disease. Different musical keys and tempos can evoke specific emotional responses, a phenomenon that composers have exploited for centuries. Studies suggest that group musical activities strengthen social bonds and increase feelings of belonging and trust.",
+  "Water is essential for all known forms of life and covers about 71 percent of the Earth's surface. A single water molecule consists of two hydrogen atoms bonded to one oxygen atom, creating its characteristic bent shape. This molecular structure gives water unique properties, including a high specific heat capacity that helps regulate temperature in living organisms and environments. Despite its abundance on Earth, only about 2.5 percent of all water is freshwater, and less than 1 percent is easily accessible for human use. The water cycle continuously moves water between the oceans, atmosphere, and land through evaporation, condensation, and precipitation. Climate change is disrupting traditional water cycles, leading to more intense droughts in some regions and flooding in others.",
+];
+
+const QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Every morning brings new potential, but if you dwell on the misfortunes of the day before, you tend to overlook tremendous opportunities.", author: "Harvey Mackay" },
+  { text: "The early morning has gold in its mouth.", author: "Benjamin Franklin" },
+  { text: "An early-morning walk is a blessing for the whole day.", author: "Henry David Thoreau" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "It is well to be up before daybreak, for such habits contribute to health, wealth, and wisdom.", author: "Aristotle" },
+  { text: "The breeze at dawn has secrets to tell you. Don't go back to sleep.", author: "Rumi" },
+  { text: "Lose an hour in the morning, and you will be all day hunting for it.", author: "Richard Whately" },
+  { text: "Morning is an important time of day, because how you spend your morning can often tell you what kind of day you are going to have.", author: "Lemony Snicket" },
+  { text: "With the new day comes new strength and new thoughts.", author: "Eleanor Roosevelt" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "What you do today can improve all your tomorrows.", author: "Ralph Marston" },
+  { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+  { text: "Your limitation — it's only your imagination.", author: "Unknown" },
+  { text: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+  { text: "Dream it. Wish it. Do it.", author: "Unknown" },
+];
+
+const BADGES = [
+  { id: 'first-wake', name: 'First Light', icon: '\uD83C\uDF05', desc: 'Dismiss your first alarm', check: (h) => h.length >= 1 },
+  { id: 'streak-3', name: 'Triple Threat', icon: '\uD83D\uDD25', desc: '3-day streak', check: (h, s) => s >= 3 },
+  { id: 'streak-7', name: 'Week Warrior', icon: '\u2B50', desc: '7-day streak', check: (h, s) => s >= 7 },
+  { id: 'streak-14', name: 'Fortnight Force', icon: '\uD83D\uDCAA', desc: '14-day streak', check: (h, s) => s >= 14 },
+  { id: 'streak-30', name: 'Monthly Master', icon: '\uD83C\uDFC6', desc: '30-day streak', check: (h, s) => s >= 30 },
+  { id: 'speed-demon', name: 'Speed Demon', icon: '\u26A1', desc: 'Dismiss in under 30 seconds', check: (h) => h.some(e => e.elapsed < 30) },
+  { id: 'early-bird', name: 'Early Bird', icon: '\uD83D\uDC26', desc: 'Dismiss an alarm before 6 AM', check: (h) => h.some(e => { const hr = parseInt(e.time); return hr < 6; }) },
+  { id: 'night-owl', name: 'Night Owl', icon: '\uD83E\uDD89', desc: 'Dismiss an alarm after 10 PM', check: (h) => h.some(e => { const hr = parseInt(e.time); return hr >= 22; }) },
+  { id: 'find-5', name: 'Item Hunter', icon: '\uD83D\uDD0D', desc: 'Complete 5 find-item challenges', check: (h) => h.filter(e => e.challengeType === 'find-item').length >= 5 },
+  { id: 'find-20', name: 'Treasure Seeker', icon: '\uD83D\uDC8E', desc: 'Complete 20 find-item challenges', check: (h) => h.filter(e => e.challengeType === 'find-item').length >= 20 },
+  { id: 'exercise-5', name: 'Fitness Rookie', icon: '\uD83C\uDFCB\uFE0F', desc: 'Complete 5 exercise challenges', check: (h) => h.filter(e => e.challengeType === 'exercise').length >= 5 },
+  { id: 'exercise-20', name: 'Gym Rat', icon: '\uD83E\uDD4A', desc: 'Complete 20 exercise challenges', check: (h) => h.filter(e => e.challengeType === 'exercise').length >= 20 },
+  { id: 'math-5', name: 'Calculator', icon: '\uD83E\uDDE0', desc: 'Complete 5 math challenges', check: (h) => h.filter(e => e.challengeType === 'math').length >= 5 },
+  { id: 'typing-5', name: 'Keyboard Warrior', icon: '\u2328\uFE0F', desc: 'Complete 5 typing challenges', check: (h) => h.filter(e => e.challengeType === 'typing').length >= 5 },
+  { id: 'no-penalty', name: 'Disciplined', icon: '\uD83C\uDF96\uFE0F', desc: 'Dismiss 10 alarms without penalty', check: (h) => h.filter(e => !e.penaltyApplied).length >= 10 },
+  { id: 'hard-mode', name: 'Hardcore', icon: '\uD83D\uDC80', desc: 'Complete 5 hard difficulty challenges', check: (h) => h.filter(e => e.difficulty === 'hard').length >= 5 },
+  { id: 'total-25', name: 'Quarter Century', icon: '\uD83C\uDF1F', desc: 'Dismiss 25 total alarms', check: (h) => h.length >= 25 },
+  { id: 'total-100', name: 'Centurion', icon: '\uD83D\uDE80', desc: 'Dismiss 100 total alarms', check: (h) => h.length >= 100 },
+];
+
 // ============================================================
 // STATE
 // ============================================================
@@ -322,9 +379,9 @@ function filterByDifficulty(list, difficulty) {
 
 function getDailyRandomChallenge(alarmIndex, difficulty, seedOffset) {
   const rng = seededRandom(getDailySeed() + alarmIndex * 777 + (seedOffset || 0));
-  // Random picks from: find-item, exercise, math
+  // Random picks from: find-item, exercise, math, typing
   const roll = rng();
-  const challengeType = roll < 0.35 ? 'find-item' : roll < 0.7 ? 'exercise' : 'math';
+  const challengeType = roll < 0.3 ? 'find-item' : roll < 0.55 ? 'exercise' : roll < 0.8 ? 'math' : 'typing';
 
   if (challengeType === 'exercise') {
     const pool = filterByDifficulty(EXERCISES, difficulty);
@@ -334,6 +391,8 @@ function getDailyRandomChallenge(alarmIndex, difficulty, seedOffset) {
     const pool = filterByDifficulty(ITEMS, difficulty);
     const item = pool[Math.floor(rng() * pool.length)];
     return { challengeType: 'find-item', item: item.id };
+  } else if (challengeType === 'typing') {
+    return { challengeType: 'typing', difficulty };
   } else {
     return { challengeType: 'math', difficulty };
   }
@@ -442,6 +501,8 @@ function setupCollapsible(toggleId, panelId, storageKey) {
   });
 }
 setupCollapsible('stats-toggle', 'stats-banner', 'wakeup-stats-open');
+setupCollapsible('badges-toggle', 'badges-banner', 'wakeup-badges-open');
+setupCollapsible('dashboard-toggle', 'sleep-dashboard', 'wakeup-dashboard-open');
 setupCollapsible('tomorrow-toggle', 'tomorrow-preview', 'wakeup-tomorrow-open');
 
 // Gradual wake-up toggle
@@ -599,6 +660,146 @@ function updateStats() {
   }
 }
 updateStats();
+
+function getUnlockedBadges() {
+  const streak = getStreak();
+  return BADGES.filter(b => b.check(state.history, streak));
+}
+
+function updateBadges() {
+  const unlocked = getUnlockedBadges();
+  const container = $('#badges-grid');
+  if (!container) return;
+  container.innerHTML = '';
+  BADGES.forEach(badge => {
+    const isUnlocked = unlocked.some(u => u.id === badge.id);
+    const div = document.createElement('div');
+    div.className = 'badge-item' + (isUnlocked ? ' unlocked' : ' locked');
+    div.innerHTML = `
+      <span class="badge-icon">${isUnlocked ? badge.icon : '\uD83D\uDD12'}</span>
+      <span class="badge-name">${badge.name}</span>
+      <span class="badge-desc">${badge.desc}</span>
+    `;
+    container.appendChild(div);
+  });
+  const countEl = $('#badges-count');
+  if (countEl) countEl.textContent = `${unlocked.length} / ${BADGES.length}`;
+}
+updateBadges();
+
+function updateDashboard() {
+  const history = state.history;
+  if (history.length === 0) return;
+
+  // Avg wake time
+  const times = history.map(h => { const [hh, mm] = h.time.split(':').map(Number); return hh * 60 + mm; });
+  const avgMin = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+  const avgH = Math.floor(avgMin / 60);
+  const avgM = avgMin % 60;
+  $('#dash-avg-time').textContent = `${String(avgH).padStart(2, '0')}:${String(avgM).padStart(2, '0')}`;
+
+  // Avg dismiss time
+  const dismissTimes = history.map(h => h.elapsed).filter(t => t > 0);
+  const avgDismiss = dismissTimes.length > 0 ? Math.round(dismissTimes.reduce((a, b) => a + b, 0) / dismissTimes.length) : 0;
+  $('#dash-avg-dismiss').textContent = `${avgDismiss}s`;
+
+  // No-penalty rate
+  const noPenalty = history.filter(h => !h.penaltyApplied).length;
+  const rate = Math.round((noPenalty / history.length) * 100);
+  $('#dash-success-rate').textContent = `${rate}%`;
+
+  // Dismiss time bar chart — last 14 days
+  const chart = $('#dashboard-chart');
+  const cCtx = chart.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  chart.width = chart.clientWidth * dpr;
+  chart.height = 180 * dpr;
+  cCtx.scale(dpr, dpr);
+  const w = chart.clientWidth;
+  const h = 180;
+  cCtx.clearRect(0, 0, w, h);
+
+  const today = new Date();
+  const dayData = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const entries = history.filter(e => e.date === ds);
+    const avg = entries.length > 0 ? Math.round(entries.reduce((a, e) => a + e.elapsed, 0) / entries.length) : 0;
+    dayData.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: avg, count: entries.length });
+  }
+
+  const maxVal = Math.max(...dayData.map(d => d.value), 30);
+  const barW = (w - 40) / 14 - 4;
+  const isDark = state.theme === 'dark';
+  const barColor = isDark ? 'rgba(124, 92, 245, 0.7)' : 'rgba(109, 40, 217, 0.6)';
+  const textColor = isDark ? '#7a70a8' : '#5b4a80';
+
+  cCtx.font = '9px Share Tech Mono, monospace';
+  cCtx.fillStyle = textColor;
+  cCtx.textAlign = 'center';
+
+  dayData.forEach((d, i) => {
+    const x = 20 + i * ((w - 40) / 14) + 2;
+    const barH = d.value > 0 ? (d.value / maxVal) * (h - 35) : 0;
+    const y = h - 20 - barH;
+
+    cCtx.fillStyle = barColor;
+    cCtx.beginPath();
+    cCtx.roundRect(x, y, barW, barH, 3);
+    cCtx.fill();
+
+    if (d.value > 0) {
+      cCtx.fillStyle = isDark ? '#e4e0ff' : '#1e1040';
+      cCtx.fillText(`${d.value}s`, x + barW / 2, y - 4);
+    }
+
+    cCtx.fillStyle = textColor;
+    cCtx.fillText(d.label, x + barW / 2, h - 5);
+  });
+
+  // Challenge type breakdown — horizontal bars
+  const cChart = $('#challenge-chart');
+  const c2 = cChart.getContext('2d');
+  cChart.width = cChart.clientWidth * dpr;
+  cChart.height = 140 * dpr;
+  c2.scale(dpr, dpr);
+  const w2 = cChart.clientWidth;
+  const h2 = 140;
+  c2.clearRect(0, 0, w2, h2);
+
+  const types = [
+    { label: 'FIND ITEM', key: 'find-item', color: isDark ? '#a855f7' : '#7e22ce' },
+    { label: 'EXERCISE', key: 'exercise', color: isDark ? '#22c55e' : '#16a34a' },
+    { label: 'MATH', key: 'math', color: isDark ? '#7c5cf5' : '#6d28d9' },
+    { label: 'TYPING', key: 'typing', color: isDark ? '#e040a0' : '#be185d' },
+  ];
+  const maxCount = Math.max(...types.map(t => history.filter(e => e.challengeType === t.key).length), 1);
+  const barH2 = 22;
+  const gap = 8;
+
+  types.forEach((t, i) => {
+    const count = history.filter(e => e.challengeType === t.key).length;
+    const y = 10 + i * (barH2 + gap);
+    const bw = count > 0 ? (count / maxCount) * (w2 - 130) : 0;
+
+    c2.fillStyle = textColor;
+    c2.font = '10px Share Tech Mono, monospace';
+    c2.textAlign = 'right';
+    c2.fillText(t.label, 75, y + 15);
+
+    c2.fillStyle = t.color;
+    c2.beginPath();
+    c2.roundRect(85, y, bw, barH2, 4);
+    c2.fill();
+
+    c2.fillStyle = isDark ? '#e4e0ff' : '#1e1040';
+    c2.textAlign = 'left';
+    c2.fillText(count.toString(), 90 + bw + 5, y + 15);
+  });
+}
+updateDashboard();
 
 // ============================================================
 // TOMORROW'S PREVIEW
@@ -819,6 +1020,8 @@ function triggerAlarm(alarm, alarmIndex) {
     resolved.challengeType = 'exercise';
   } else if (alarm.mode === 'find-item') {
     resolved.challengeType = 'find-item';
+  } else if (alarm.mode === 'typing') {
+    resolved.challengeType = 'typing';
   }
 
   state.activeAlarm = resolved;
@@ -871,6 +1074,8 @@ function buildChallengeDesc(resolved, isMulti) {
     const ex = EXERCISES.find((e) => e.id === resolved.exercise);
     const name = ex ? ex.name : resolved.exercise;
     return `${prefix} Complete <span class="highlight">${name}</span> in front of your camera.`;
+  } else if (resolved.challengeType === 'typing') {
+    return `${prefix} Type an <span class="highlight">educational paragraph</span> accurately to prove you're awake.`;
   } else {
     return `${prefix} Solve <span class="highlight">math problems</span> to prove you're awake.`;
   }
@@ -960,6 +1165,9 @@ function unlockAudio() {
 });
 
 function startAlarmSound(type) {
+  // Start vibration immediately (works without user gesture on most mobile browsers)
+  startVibration();
+
   try {
     // Reuse persistent context if available, otherwise create new
     if (persistentCtx && persistentCtx.state !== 'closed') {
@@ -984,6 +1192,39 @@ function startAlarmSound(type) {
     // Last resort: HTML5 Audio fallback
     state.fallbackAudio = createFallbackAudio();
   }
+
+  // On mobile, audio may be blocked until user gesture.
+  // Retry playing sound on first touch/click on the ringing screen.
+  function retryAudio() {
+    if (!state.activeAlarm) return;
+    if (state.audioCtx && state.audioCtx.state === 'suspended') {
+      state.audioCtx.resume();
+    }
+    if (state.fallbackAudio && state.fallbackAudio.paused) {
+      state.fallbackAudio.play().catch(() => {});
+    }
+    document.removeEventListener('touchstart', retryAudio);
+    document.removeEventListener('click', retryAudio);
+  }
+  document.addEventListener('touchstart', retryAudio, { once: true, passive: true });
+  document.addEventListener('click', retryAudio, { once: true, passive: true });
+}
+
+function startVibration() {
+  if (!navigator.vibrate) return;
+  // Vibrate pattern: 500ms on, 300ms off — repeating
+  const pattern = [500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500, 300];
+  navigator.vibrate(pattern);
+  // Vibration API doesn't loop, so repeat every 16 seconds
+  state.vibrationInterval = setInterval(() => {
+    if (!state.activeAlarm) { clearInterval(state.vibrationInterval); navigator.vibrate(0); return; }
+    navigator.vibrate(pattern);
+  }, 16000);
+}
+
+function stopVibration() {
+  if (navigator.vibrate) navigator.vibrate(0);
+  if (state.vibrationInterval) { clearInterval(state.vibrationInterval); state.vibrationInterval = null; }
 }
 
 // HTML5 Audio fallback — generates a loud beep WAV
@@ -1204,6 +1445,7 @@ function playCustomSound(ctx, duration) {
 function stopAlarmSound() {
   clearTimeout(state.alarmSoundTimeout);
   clearInterval(state.penaltyInterval);
+  stopVibration();
   // Stop Web Audio
   if (state.audioCtx) {
     // Don't close the persistent context, just stop scheduling
@@ -1230,6 +1472,7 @@ $('#btn-start-challenge').addEventListener('click', () => {
   const alarm = state.activeAlarm;
   if (alarm.challengeType === 'find-item') startFindItemChallenge(alarm);
   else if (alarm.challengeType === 'exercise') startExerciseChallenge(alarm);
+  else if (alarm.challengeType === 'typing') startTypingChallenge(alarm);
   else if (alarm.challengeType === 'math') startMathChallenge(alarm);
 });
 
@@ -1610,6 +1853,72 @@ $('#btn-check-math').addEventListener('click', () => {
 });
 
 // ============================================================
+// TYPING CHALLENGE
+// ============================================================
+function startTypingChallenge(alarm) {
+  showScreen('typing');
+  renderMultiProgress('typing-multi-progress');
+
+  const paragraph = TYPING_PARAGRAPHS[Math.floor(Math.random() * TYPING_PARAGRAPHS.length)];
+  const sourceEl = $('#typing-source');
+  const inputEl = $('#typing-input');
+  const feedbackEl = $('#typing-feedback');
+
+  // Render source text with character spans
+  sourceEl.innerHTML = paragraph.split('').map((ch, i) =>
+    `<span class="char-pending" data-idx="${i}">${ch === ' ' ? '&nbsp;' : ch.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+  ).join('');
+
+  inputEl.value = '';
+  inputEl.focus();
+  feedbackEl.classList.add('hidden');
+  $('#typing-accuracy').textContent = 'Accuracy: 0%';
+  $('#typing-progress').textContent = 'Progress: 0%';
+
+  inputEl.oninput = () => {
+    const typed = inputEl.value;
+    const chars = sourceEl.querySelectorAll('span');
+    let correct = 0;
+    let total = typed.length;
+
+    chars.forEach((span, i) => {
+      if (i < typed.length) {
+        if (typed[i] === paragraph[i]) {
+          span.className = 'char-correct';
+          correct++;
+        } else {
+          span.className = 'char-wrong';
+        }
+      } else {
+        span.className = 'char-pending';
+      }
+    });
+
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const progress = Math.round((typed.length / paragraph.length) * 100);
+    $('#typing-accuracy').textContent = `Accuracy: ${accuracy}%`;
+    $('#typing-progress').textContent = `Progress: ${Math.min(progress, 100)}%`;
+
+    // Check completion: must type full length with 95%+ accuracy
+    if (typed.length >= paragraph.length) {
+      const finalAccuracy = Math.round((correct / paragraph.length) * 100);
+      if (finalAccuracy >= 95) {
+        feedbackEl.textContent = `TYPING COMPLETE — ${finalAccuracy}% ACCURACY`;
+        feedbackEl.classList.remove('hidden');
+        inputEl.disabled = true;
+        setTimeout(() => { inputEl.disabled = false; onChallengeStepDone(); }, 1500);
+      } else {
+        feedbackEl.textContent = `ACCURACY TOO LOW (${finalAccuracy}%) — NEED 95%. TRY AGAIN.`;
+        feedbackEl.style.color = 'var(--danger)';
+        feedbackEl.style.background = 'rgba(var(--danger-rgb), 0.1)';
+        feedbackEl.style.borderColor = 'rgba(var(--danger-rgb), 0.2)';
+        feedbackEl.classList.remove('hidden');
+      }
+    }
+  };
+}
+
+// ============================================================
 // MULTI-STEP HANDLING
 // ============================================================
 function renderMultiProgress(containerId) {
@@ -1651,6 +1960,7 @@ function onChallengeStepDone() {
       const alarm = state.activeAlarm;
       if (alarm.challengeType === 'find-item') startFindItemChallenge(alarm);
       else if (alarm.challengeType === 'exercise') startExerciseChallenge(alarm);
+      else if (alarm.challengeType === 'typing') startTypingChallenge(alarm);
       else if (alarm.challengeType === 'math') startMathChallenge(alarm);
     }, 2000);
   } else {
@@ -1689,8 +1999,15 @@ function challengeComplete() {
   saveAlarms();
   renderAlarms();
   updateStats();
+  updateBadges();
+  updateDashboard();
 
   showScreen('success');
+
+  // Show motivational quote
+  const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  $('#motivational-quote').innerHTML = `<p class="quote-text">"${quote.text}"</p><p class="quote-author">— ${quote.author}</p>`;
+
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
 
@@ -1701,6 +2018,8 @@ function challengeComplete() {
   } else if (alarm.challengeType === 'exercise') {
     const ex = EXERCISES.find((e) => e.id === alarm.exercise);
     challengeDesc = ex ? ex.name : alarm.exercise;
+  } else if (alarm.challengeType === 'typing') {
+    challengeDesc = 'Typing Challenge';
   } else {
     challengeDesc = 'Math Problems';
   }
