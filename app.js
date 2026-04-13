@@ -889,11 +889,51 @@ function applyPenalty(alarm) {
 }
 
 // ============================================================
-// ALARM SOUNDS — LOUD!
+// ALARM SOUNDS — LOUD! (Mobile-compatible)
 // ============================================================
+
+// Unlock audio on first user interaction (required by mobile browsers)
+let audioUnlocked = false;
+let persistentCtx = null;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  try {
+    persistentCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Play a silent buffer to unlock
+    const buf = persistentCtx.createBuffer(1, 1, 22050);
+    const src = persistentCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(persistentCtx.destination);
+    src.start(0);
+    // Also create and play a silent HTML audio to unlock that path
+    const silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    silentAudio.volume = 0.01;
+    silentAudio.play().catch(() => {});
+    audioUnlocked = true;
+  } catch (e) {}
+}
+
+// Attach unlock to every possible user gesture
+['touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach((evt) => {
+  document.addEventListener(evt, unlockAudio, { once: false, passive: true });
+});
+
 function startAlarmSound(type) {
   try {
-    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Reuse persistent context if available, otherwise create new
+    if (persistentCtx && persistentCtx.state !== 'closed') {
+      state.audioCtx = persistentCtx;
+      if (state.audioCtx.state === 'suspended') {
+        state.audioCtx.resume();
+      }
+    } else {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // Also use HTML5 Audio as a fallback alarm (works better on some mobile browsers)
+    state.fallbackAudio = createFallbackAudio();
+
     if (type === 'custom' && state.customSound) {
       playCustomSoundLoop();
     } else {
@@ -901,11 +941,59 @@ function startAlarmSound(type) {
     }
   } catch (e) {
     console.warn('Audio not available');
+    // Last resort: HTML5 Audio fallback
+    state.fallbackAudio = createFallbackAudio();
+  }
+}
+
+// HTML5 Audio fallback — generates a loud beep WAV
+function createFallbackAudio() {
+  try {
+    const sampleRate = 22050;
+    const duration = 1.5;
+    const numSamples = sampleRate * duration;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+
+    // WAV header
+    const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+
+    // Generate loud beep pattern
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const beepOn = (t % 0.4) < 0.25;
+      const sample = beepOn ? Math.sin(2 * Math.PI * 880 * t) * 0.9 : 0;
+      view.setInt16(44 + i * 2, sample * 32767, true);
+    }
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.loop = true;
+    audio.volume = 1.0;
+    audio.play().catch(() => {});
+    return audio;
+  } catch (e) {
+    return null;
   }
 }
 
 function playAlarmLoop(type) {
   if (!state.audioCtx || !state.activeAlarm) return;
+  // Resume context if suspended (mobile browsers suspend it)
+  if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
   playSynthSound(state.audioCtx, type, 1.0);
   const interval = type === 'escalating' ? 2000 : type === 'melody' ? 2500 : 1200;
   state.alarmSoundTimeout = setTimeout(() => playAlarmLoop(type), interval);
@@ -1076,7 +1164,22 @@ function playCustomSound(ctx, duration) {
 function stopAlarmSound() {
   clearTimeout(state.alarmSoundTimeout);
   clearInterval(state.penaltyInterval);
-  if (state.audioCtx) { state.audioCtx.close().catch(() => {}); state.audioCtx = null; }
+  // Stop Web Audio
+  if (state.audioCtx) {
+    // Don't close the persistent context, just stop scheduling
+    if (state.audioCtx === persistentCtx) {
+      state.audioCtx = null;
+    } else {
+      state.audioCtx.close().catch(() => {});
+      state.audioCtx = null;
+    }
+  }
+  // Stop fallback HTML5 audio
+  if (state.fallbackAudio) {
+    state.fallbackAudio.pause();
+    state.fallbackAudio.currentTime = 0;
+    state.fallbackAudio = null;
+  }
 }
 
 // ============================================================
