@@ -1563,43 +1563,45 @@ async function startFindItemChallenge(alarm) {
 
 function getItemColorProfile(itemId) {
   const profiles = {
-    plant: { hueMin: 60, hueMax: 170, satMin: 30, valMin: 30, minArea: 0.05 },
-    fruit: { hueMin: 0, hueMax: 60, satMin: 50, valMin: 50, minArea: 0.02 },
-    banana: { hueMin: 30, hueMax: 65, satMin: 40, valMin: 50, minArea: 0.02 },
-    book: { detectByEdges: true, minArea: 0.04 },
-    notebook: { detectByEdges: true, minArea: 0.04 },
+    plant: { hueMin: 50, hueMax: 180, satMin: 15, valMin: 15, threshold: 0.06 },
+    fruit: { hueMin: 0, hueMax: 60, satMin: 25, valMin: 30, threshold: 0.04 },
+    banana: { hueMin: 25, hueMax: 70, satMin: 20, valMin: 30, threshold: 0.04 },
+    book: { detectByEdges: true, threshold: 0.06 },
+    notebook: { detectByEdges: true, threshold: 0.06 },
   };
-  return profiles[itemId] || { detectBySize: true, minArea: 0.03 };
+  return profiles[itemId] || { detectBySize: true, threshold: 0.03 };
 }
 
 function detectItemByColor(imageData, profile, width, height) {
   const data = imageData.data;
-  const cx1 = Math.floor(width * 0.2), cx2 = Math.floor(width * 0.8);
-  const cy1 = Math.floor(height * 0.2), cy2 = Math.floor(height * 0.8);
-  let matchCount = 0, edgeCount = 0;
-  for (let y = cy1; y < cy2; y += 2) {
-    for (let x = cx1; x < cx2; x += 2) {
+  // Scan most of the frame (10%-90%) so item doesn't need to be perfectly centered
+  const cx1 = Math.floor(width * 0.1), cx2 = Math.floor(width * 0.9);
+  const cy1 = Math.floor(height * 0.1), cy2 = Math.floor(height * 0.9);
+  let matchCount = 0, edgeCount = 0, totalPixels = 0;
+  for (let y = cy1; y < cy2; y += 3) {
+    for (let x = cx1; x < cx2; x += 3) {
+      totalPixels++;
       const i = (y * width + x) * 4;
       const r = data[i], g = data[i + 1], b = data[i + 2];
       if (profile.hueMin !== undefined) {
         const hsv = rgbToHsv(r, g, b);
         if (hsv[0] >= profile.hueMin && hsv[0] <= profile.hueMax && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matchCount++;
       } else if (profile.detectByEdges) {
-        if (x > cx1 + 2 && y > cy1 + 2) {
-          const px = (y * width + (x - 2)) * 4, py = ((y - 2) * width + x) * 4;
+        if (x > cx1 + 3 && y > cy1 + 3) {
+          const px = (y * width + (x - 3)) * 4, py = ((y - 3) * width + x) * 4;
           const dx = Math.abs(r - data[px]) + Math.abs(g - data[px + 1]) + Math.abs(b - data[px + 2]);
           const dy = Math.abs(r - data[py]) + Math.abs(g - data[py + 1]) + Math.abs(b - data[py + 2]);
-          if (dx + dy > 80) edgeCount++;
+          if (dx + dy > 60) edgeCount++;
         }
       } else {
+        // Generic: detect any object that isn't a plain wall
         const brightness = (r + g + b) / 3;
-        if (brightness > 30 && brightness < 240) matchCount++;
+        if (brightness > 20 && brightness < 245) matchCount++;
       }
     }
   }
-  const centerPixels = ((cx2 - cx1) / 2) * ((cy2 - cy1) / 2);
-  if (profile.detectByEdges) return edgeCount / centerPixels > 0.08;
-  return matchCount / centerPixels > (profile.minArea || 0.03) * 10;
+  if (profile.detectByEdges) return edgeCount / totalPixels > (profile.threshold || 0.06);
+  return matchCount / totalPixels > (profile.threshold || 0.03);
 }
 
 function rgbToHsv(r, g, b) {
