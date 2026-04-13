@@ -95,6 +95,7 @@ const state = {
   gradualAudioCtx: null,
   bedtimeShown: false,
   sleepHours: parseInt(localStorage.getItem('wakeup-sleep-hours') || '8'),
+  facingMode: 'environment',
 };
 
 // ============================================================
@@ -315,9 +316,8 @@ function seededRandom(seed) {
 }
 
 function filterByDifficulty(list, difficulty) {
-  if (difficulty === 'easy') return list.filter((i) => i.difficulty === 'easy');
-  if (difficulty === 'medium') return list.filter((i) => i.difficulty === 'easy' || i.difficulty === 'medium');
-  return list; // hard = all items
+  const match = list.filter((i) => i.difficulty === difficulty);
+  return match.length > 0 ? match : list;
 }
 
 function getDailyRandomChallenge(alarmIndex, difficulty, seedOffset) {
@@ -370,8 +370,30 @@ $$('.diff-btn').forEach((btn) => {
     $$('.diff-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     selectedDifficulty = btn.dataset.diff;
+    updateSelectsForDifficulty();
   });
 });
+
+function updateSelectsForDifficulty() {
+  // Update item select
+  itemSelect.innerHTML = '';
+  const filteredItems = filterByDifficulty(ITEMS, selectedDifficulty);
+  filteredItems.forEach((item) => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = `${item.icon} ${item.name} [${item.difficulty.toUpperCase()}]`;
+    itemSelect.appendChild(opt);
+  });
+  // Update exercise select
+  exerciseSelect.innerHTML = '';
+  const filteredExercises = filterByDifficulty(EXERCISES, selectedDifficulty);
+  filteredExercises.forEach((ex) => {
+    const opt = document.createElement('option');
+    opt.value = ex.id;
+    opt.textContent = `${ex.name} [${ex.difficulty.toUpperCase()}]`;
+    exerciseSelect.appendChild(opt);
+  });
+}
 
 // Sound selector
 $('#sound-select').addEventListener('change', (e) => {
@@ -1405,6 +1427,8 @@ async function startExerciseChallenge(alarm) {
   pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
 
   let repCount = 0, exerciseState = 'ready', bodyDetected = false, motionFrames = 0;
+  let lastRepTime = 0;
+  const REP_COOLDOWN = 600; // ms minimum between reps to prevent double-counting
 
   const POSE_CONNECTIONS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[24,26],[25,27],[26,28]];
   const isDark = state.theme === 'dark';
@@ -1426,7 +1450,12 @@ async function startExerciseChallenge(alarm) {
       else if (exerciseType === 'squats') result = detectSquat(lm, exerciseState);
       if (result && result.newState !== exerciseState) {
         exerciseState = result.newState;
-        if (result.counted) { repCount++; onRepCounted(repCount, targetReps, tsInt); }
+        const now = Date.now();
+        if (result.counted && now - lastRepTime > REP_COOLDOWN) {
+          lastRepTime = now;
+          repCount++;
+          onRepCounted(repCount, targetReps, tsInt);
+        }
       }
     }
   });
@@ -1440,24 +1469,33 @@ async function startExerciseChallenge(alarm) {
 }
 
 function detectJumpingJack(lm, s) {
-  const armsUp = lm[15].y < lm[11].y && lm[16].y < lm[12].y;
-  const armsDown = lm[15].y > lm[11].y + 0.1 && lm[16].y > lm[12].y + 0.1;
-  const apart = Math.abs(lm[27].x - lm[28].x) > 0.25;
-  const together = Math.abs(lm[27].x - lm[28].x) < 0.15;
+  // Use wrist positions (15,16) relative to shoulders (11,12)
+  const armsUp = lm[15].y < lm[11].y - 0.05 && lm[16].y < lm[12].y - 0.05;
+  const armsDown = lm[15].y > lm[11].y + 0.08 && lm[16].y > lm[12].y + 0.08;
+  // Use ankle positions (27,28) for leg spread
+  const legSpread = Math.abs(lm[27].x - lm[28].x);
+  const apart = legSpread > 0.18;
+  const together = legSpread < 0.13;
   if ((s === 'ready' || s === 'down') && armsUp && apart) return { newState: 'up', counted: false };
   if (s === 'up' && armsDown && together) return { newState: 'down', counted: true };
   return { newState: s, counted: false };
 }
 function detectPushUp(lm, s) {
-  const angle = calcAngle(lm[11], lm[13], lm[15]);
-  if ((s === 'ready' || s === 'up') && angle < 110) return { newState: 'down', counted: false };
-  if (s === 'down' && angle > 150) return { newState: 'up', counted: true };
+  // Use both arms for more reliable detection
+  const angleL = calcAngle(lm[11], lm[13], lm[15]);
+  const angleR = calcAngle(lm[12], lm[14], lm[16]);
+  const angle = (angleL + angleR) / 2;
+  if ((s === 'ready' || s === 'up') && angle < 100) return { newState: 'down', counted: false };
+  if (s === 'down' && angle > 155) return { newState: 'up', counted: true };
   return { newState: s, counted: false };
 }
 function detectSquat(lm, s) {
-  const angle = calcAngle(lm[23], lm[25], lm[27]);
-  if ((s === 'ready' || s === 'up') && angle < 120) return { newState: 'down', counted: false };
-  if (s === 'down' && angle > 160) return { newState: 'up', counted: true };
+  // Use both legs for more reliable detection
+  const angleL = calcAngle(lm[23], lm[25], lm[27]);
+  const angleR = calcAngle(lm[24], lm[26], lm[28]);
+  const angle = (angleL + angleR) / 2;
+  if ((s === 'ready' || s === 'up') && angle < 115) return { newState: 'down', counted: false };
+  if (s === 'down' && angle > 155) return { newState: 'up', counted: true };
   return { newState: s, counted: false };
 }
 function calcAngle(a, b, c) {
@@ -1737,6 +1775,33 @@ function stopCamera() {
     state.cameraStream = null;
   }
 }
+
+async function flipCamera(videoEl) {
+  // Toggle facing mode
+  state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+  // Stop current stream
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach((t) => t.stop());
+  }
+  try {
+    try {
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: state.facingMode, width: 640, height: 480 },
+      });
+    } catch (_) {
+      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+    videoEl.srcObject = state.cameraStream;
+    videoEl.setAttribute('playsinline', 'true');
+    await videoEl.play();
+  } catch (err) {
+    // If flip fails, try the other direction
+    state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+  }
+}
+
+$('#find-flip-cam').addEventListener('click', () => flipCamera($('#find-video')));
+$('#exercise-flip-cam').addEventListener('click', () => flipCamera($('#exercise-video')));
 
 // ============================================================
 // DOUBLE-CLICK TO TEST
