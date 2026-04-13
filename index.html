@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WAKE // UP - Neural Alarm System</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='36' r='22' fill='none' stroke='%2300f0ff' stroke-width='3'/><line x1='32' y1='36' x2='32' y2='22' stroke='%2300f0ff' stroke-width='3' stroke-linecap='round'/><line x1='32' y1='36' x2='42' y2='36' stroke='%2300f0ff' stroke-width='3' stroke-linecap='round'/><circle cx='32' cy='36' r='2' fill='%2300f0ff'/><line x1='14' y1='16' x2='22' y2='22' stroke='%23bf5af2' stroke-width='3' stroke-linecap='round'/><line x1='50' y1='16' x2='42' y2='22' stroke='%23bf5af2' stroke-width='3' stroke-linecap='round'/><circle cx='12' cy='14' r='5' fill='none' stroke='%23bf5af2' stroke-width='2.5'/><circle cx='52' cy='14' r='5' fill='none' stroke='%23bf5af2' stroke-width='2.5'/></svg>" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#00f0ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WAKE UP" />
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="scanline"></div>
+
+  <!-- Gradual wake-up overlay -->
+  <div id="gradual-overlay" class="gradual-overlay hidden"></div>
+
+  <!-- Theme toggle -->
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+    <svg id="icon-moon" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+    <svg id="icon-sun" class="theme-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </button>
+
+  <!-- User badge (shown when logged in) -->
+  <div id="user-badge" class="user-badge hidden">
+    <div class="user-avatar" id="user-avatar"></div>
+    <span id="user-display-name"></span>
+    <button class="btn-logout" id="btn-logout">LOGOUT</button>
+  </div>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="screen-login" class="screen active">
+    <div class="container login-container">
+      <div class="login-logo">
+        <div class="logo-mark">
+          <div class="logo-ring"></div>
+          <div class="logo-ring ring-2"></div>
+          <div class="logo-dot"></div>
+        </div>
+        <h1 class="title">WAKE <span class="title-sep">//</span> UP</h1>
+        <p class="subtitle">NEURAL ALARM SYSTEM <span class="ver">v3.0</span></p>
+      </div>
+
+      <div class="glass-panel login-panel">
+        <div class="panel-header">
+          <span class="panel-dot"></span>
+          <span class="panel-title" id="login-panel-title">SIGN IN</span>
+          <span class="panel-line"></span>
+        </div>
+
+        <div id="login-error" class="login-error hidden"></div>
+
+        <div id="register-name-row" class="form-row hidden">
+          <label>DISPLAY NAME</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="register-name" class="login-input" placeholder="Display name" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>USERNAME</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="login-username" class="login-input" placeholder="Enter username" autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>PASSWORD</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="login-password" class="login-input" placeholder="Enter password" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <button id="btn-login" class="btn btn-primary" style="margin-top:0.5rem;">
+          <span class="btn-glow"></span>
+          <span class="btn-text">SIGN IN</span>
+        </button>
+
+        <div class="login-divider">OR</div>
+
+        <button id="btn-toggle-register" class="btn-register">CREATE NEW ACCOUNT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SETUP SCREEN ==================== -->
+  <div id="screen-setup" class="screen">
+    <div class="container">
+      <div class="header-block">
+        <div class="logo-mark">
+          <div class="logo-ring"></div>
+          <div class="logo-ring ring-2"></div>
+          <div class="logo-dot"></div>
+        </div>
+        <h1 class="title">WAKE <span class="title-sep">//</span> UP</h1>
+        <p class="subtitle">NEURAL ALARM SYSTEM <span class="ver">v3.0</span></p>
+      </div>
+
+      <!-- Clock -->
+      <div class="clock-container">
+        <div class="clock-border"></div>
+        <div class="clock" id="current-time">00:00:00</div>
+        <div class="clock-date" id="current-date"></div>
+        <div class="clock-hex" id="clock-hex">#000000</div>
+      </div>
+
+      <!-- Stats Banner -->
+      <div class="glass-panel stats-banner" id="stats-banner">
+        <div class="panel-header">
+          <span class="panel-dot"></span>
+          <span class="panel-title">YOUR STATS</span>
+          <span class="panel-line"></span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-number" id="stat-streak">0</div>
+            <div class="stat-desc">DAY STREAK</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" id="stat-total">0</div>
+            <div class="stat-desc">TOTAL DISMISSED</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" id="stat-fastest">--</div>
+            <div class="stat-desc">FASTEST (s)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" id="stat-exercises">0</div>
+            <div class="stat-desc">EXERCISES DONE</div>
+          </div>
+        </div>
+        <div class="streak-calendar-label">LAST 30 DAYS — <span style="color:var(--success);">&#9632;</span> alarm dismissed <span style="color:var(--text-muted);">&#9632;</span> no activity</div>
+        <div class="streak-calendar" id="streak-calendar"></div>
+      </div>
+
+      <!-- Tomorrow's Challenge Preview -->
+      <div class="glass-panel tomorrow-preview" id="tomorrow-preview">
+        <div class="panel-header">
+          <span class="panel-dot"></span>
+          <span class="panel-title">TOMORROW'S RANDOM CHALLENGE</span>
+          <span class="panel-line"></span>
+        </div>
+        <div id="tomorrow-content" class="tomorrow-content"></div>
+      </div>
+
+      <!-- Alarm Form -->
+      <div class="glass-panel alarm-form">
+        <div class="panel-header">
+          <span class="panel-dot"></span>
+          <span class="panel-title">NEW ALARM</span>
+          <span class="panel-line"></span>
+        </div>
+
+        <div class="form-row">
+          <label for="alarm-time">TIME</label>
+          <input type="time" id="alarm-time" />
+        </div>
+
+        <!-- Repeat -->
+        <div class="form-row">
+          <label>REPEAT</label>
+          <div class="repeat-selector">
+            <button class="repeat-btn active" data-repeat="once">ONCE</button>
+            <button class="repeat-btn" data-repeat="daily">DAILY</button>
+            <button class="repeat-btn" data-repeat="weekdays">WEEKDAYS</button>
+            <button class="repeat-btn" data-repeat="weekends">WEEKENDS</button>
+            <button class="repeat-btn" data-repeat="custom">CUSTOM</button>
+          </div>
+          <div id="custom-days" class="custom-days hidden">
+            <label class="day-check"><input type="checkbox" value="0"><span>Sun</span></label>
+            <label class="day-check"><input type="checkbox" value="1"><span>Mon</span></label>
+            <label class="day-check"><input type="checkbox" value="2"><span>Tue</span></label>
+            <label class="day-check"><input type="checkbox" value="3"><span>Wed</span></label>
+            <label class="day-check"><input type="checkbox" value="4"><span>Thu</span></label>
+            <label class="day-check"><input type="checkbox" value="5"><span>Fri</span></label>
+            <label class="day-check"><input type="checkbox" value="6"><span>Sat</span></label>
+          </div>
+        </div>
+
+        <!-- Difficulty -->
+        <div class="form-row">
+          <label>DIFFICULTY</label>
+          <div class="difficulty-selector">
+            <button class="diff-btn" data-diff="easy">EASY</button>
+            <button class="diff-btn active" data-diff="medium">MEDIUM</button>
+            <button class="diff-btn" data-diff="hard">HARD</button>
+          </div>
+        </div>
+
+        <!-- Challenge Mode -->
+        <div class="form-row">
+          <label>CHALLENGE MODE</label>
+          <div class="mode-selector">
+            <button class="mode-btn active" data-mode="random">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+              RANDOM
+            </button>
+            <button class="mode-btn" data-mode="find-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              FIND ITEM
+            </button>
+            <button class="mode-btn" data-mode="exercise">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+              EXERCISE
+            </button>
+            <button class="mode-btn" data-mode="math">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              MATH
+            </button>
+            <button class="mode-btn" data-mode="multi">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              MULTI
+            </button>
+          </div>
+        </div>
+
+        <!-- Sub-options -->
+        <div id="item-options" class="sub-options hidden">
+          <div class="form-row">
+            <label for="item-select">ITEM</label>
+            <select id="item-select"></select>
+          </div>
+        </div>
+        <div id="exercise-options" class="sub-options hidden">
+          <div class="form-row">
+            <label for="exercise-select">EXERCISE</label>
+            <select id="exercise-select"></select>
+          </div>
+        </div>
+
+        <!-- Gradual Wake-Up -->
+        <div class="form-row">
+          <div class="toggle-row" id="gradual-row">
+            <div class="toggle-text">
+              <span class="toggle-title">GRADUAL WAKE-UP</span>
+              Soft ambient sound starts 5 min before alarm
+            </div>
+            <div class="toggle-track" id="gradual-track">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+          <input type="checkbox" id="gradual-toggle" class="hidden" />
+        </div>
+
+        <!-- Alarm Sound -->
+        <div class="form-row">
+          <label>ALARM SOUND</label>
+          <div class="sound-selector">
+            <select id="sound-select">
+              <option value="siren">Siren (Loud)</option>
+              <option value="buzzer">Buzzer (Classic)</option>
+              <option value="melody">Melody</option>
+              <option value="escalating">Escalating Urgency</option>
+              <option value="voice">Voice "WAKE UP"</option>
+              <option value="custom">Custom Upload</option>
+            </select>
+            <button id="btn-preview-sound" class="btn-icon" title="Preview sound">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+          </div>
+          <div id="custom-sound-upload" class="hidden">
+            <label class="file-upload-label">
+              <input type="file" id="custom-sound-file" accept="audio/*" />
+              <span>Choose audio file...</span>
+            </label>
+            <div id="custom-sound-name" class="file-name"></div>
+          </div>
+        </div>
+
+        <button id="btn-set-alarm" class="btn btn-primary">
+          <span class="btn-glow"></span>
+          <span class="btn-text">ACTIVATE ALARM</span>
+        </button>
+      </div>
+
+      <!-- Active alarms -->
+      <div id="alarms-list" class="alarms-list"></div>
+
+      <!-- Bedtime Reminder -->
+      <div class="glass-panel bedtime-panel">
+        <div class="panel-header">
+          <span class="panel-dot"></span>
+          <span class="panel-title">BEDTIME REMINDER</span>
+          <span class="panel-line"></span>
+        </div>
+        <p class="bedtime-desc">Get notified when it's time to sleep based on your earliest alarm.</p>
+        <div class="form-row">
+          <label>HOURS OF SLEEP</label>
+          <select id="sleep-hours">
+            <option value="0">Off</option>
+            <option value="6">6 hours</option>
+            <option value="7">7 hours</option>
+            <option value="8" selected>8 hours</option>
+            <option value="9">9 hours</option>
+          </select>
+        </div>
+        <div id="bedtime-display" class="bedtime-display"></div>
+      </div>
+
+      <div class="footer-info">
+        <span class="footer-dot blink"></span>
+        SYSTEM ONLINE — DOUBLE-CLICK CLOCK TO TEST
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== RINGING SCREEN ==================== -->
+  <div id="screen-ringing" class="screen">
+    <div class="container ringing-container">
+      <div class="alarm-flash">
+        <div class="warning-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <h1 class="ringing-title glitch" data-text="WAKE UP">WAKE UP</h1>
+        <div class="ringing-time" id="ringing-time">07:00</div>
+        <div class="sound-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <!-- Snooze penalty timer -->
+      <div class="snooze-penalty" id="snooze-penalty">
+        <span class="penalty-label">PENALTY IN:</span>
+        <span class="penalty-timer" id="penalty-timer">60</span>
+        <span class="penalty-label">s — Challenge gets harder!</span>
+      </div>
+      <div class="challenge-description glass-panel" id="challenge-desc"></div>
+      <!-- Multi-step indicator -->
+      <div id="multi-step-indicator" class="multi-step-indicator hidden">
+        <div class="step-dots" id="step-dots"></div>
+      </div>
+      <button id="btn-start-challenge" class="btn btn-danger btn-large">
+        <span class="btn-glow"></span>
+        <span class="btn-text">INITIATE CHALLENGE</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== FIND ITEM SCREEN ==================== -->
+  <div id="screen-find-item" class="screen">
+    <div class="container challenge-container">
+      <div class="challenge-header">
+        <div class="challenge-tag">LOCATE TARGET</div>
+        <!-- Multi-step progress -->
+        <div id="find-multi-progress" class="multi-progress hidden"></div>
+        <h2>Find: <span id="find-item-name" class="highlight"></span></h2>
+        <p class="challenge-sub">Show the item to your camera. Hold it steady for 3 seconds.</p>
+        <div class="liveness-badge">
+          <span class="dot"></span> LIVE FEED
+          <span class="mono" id="live-timestamp"></span>
+        </div>
+      </div>
+      <div class="camera-wrapper">
+        <video id="find-video" autoplay playsinline></video>
+        <canvas id="find-canvas" class="overlay-canvas"></canvas>
+        <div class="camera-corners">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+        </div>
+        <div id="find-status" class="camera-status">INITIALIZING CAMERA...</div>
+        <div id="find-countdown" class="countdown hidden">3</div>
+        <div class="camera-scanline"></div>
+      </div>
+      <div class="liveness-checks">
+        <div class="check" id="check-camera"><span class="check-box"></span> Camera active</div>
+        <div class="check" id="check-movement"><span class="check-box"></span> Movement detected</div>
+        <div class="check" id="check-item"><span class="check-box"></span> Item recognized</div>
+      </div>
+      <p class="anti-cheat-note">ANTI-FABRICATION PROTOCOL ACTIVE</p>
+    </div>
+  </div>
+
+  <!-- ==================== EXERCISE SCREEN ==================== -->
+  <div id="screen-exercise" class="screen">
+    <div class="container challenge-container">
+      <div class="challenge-header">
+        <div class="challenge-tag">PHYSICAL VERIFICATION</div>
+        <div id="ex-multi-progress" class="multi-progress hidden"></div>
+        <h2 id="exercise-title">Do: 10 Jumping Jacks</h2>
+        <div class="rep-counter-wrap">
+          <div class="rep-counter">
+            <span id="rep-current">0</span>
+            <span class="rep-sep">/</span>
+            <span id="rep-target">10</span>
+          </div>
+          <div class="rep-label">REPS COMPLETED</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="exercise-progress"></div>
+          <div class="progress-glow" id="exercise-progress-glow"></div>
+        </div>
+        <div class="liveness-badge">
+          <span class="dot"></span> LIVE FEED
+          <span class="mono" id="exercise-live-timestamp"></span>
+        </div>
+      </div>
+      <div class="camera-wrapper wide">
+        <video id="exercise-video" autoplay playsinline></video>
+        <canvas id="exercise-canvas" class="overlay-canvas"></canvas>
+        <div class="camera-corners">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+        </div>
+        <div id="exercise-status" class="camera-status">INITIALIZING CAMERA...</div>
+        <div id="exercise-feedback" class="exercise-feedback hidden"></div>
+        <div class="camera-scanline"></div>
+      </div>
+      <div class="liveness-checks">
+        <div class="check" id="check-ex-camera"><span class="check-box"></span> Camera active</div>
+        <div class="check" id="check-ex-body"><span class="check-box"></span> Full body visible</div>
+        <div class="check" id="check-ex-motion"><span class="check-box"></span> Motion detected</div>
+      </div>
+      <p class="anti-cheat-note">POSE ANALYSIS ACTIVE</p>
+    </div>
+  </div>
+
+  <!-- ==================== MATH / PUZZLE SCREEN ==================== -->
+  <div id="screen-math" class="screen">
+    <div class="container challenge-container">
+      <div class="challenge-header">
+        <div class="challenge-tag">COGNITIVE VERIFICATION</div>
+        <div id="math-multi-progress" class="multi-progress hidden"></div>
+        <h2>Solve the Problems</h2>
+        <p class="challenge-sub" id="math-sub">Answer all problems correctly to dismiss.</p>
+      </div>
+      <div class="glass-panel math-panel">
+        <div id="math-problems"></div>
+        <div id="math-feedback" class="math-feedback hidden"></div>
+        <button id="btn-check-math" class="btn btn-primary" style="margin-top:1rem;">
+          <span class="btn-glow"></span>
+          <span class="btn-text">SUBMIT ANSWERS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SUCCESS SCREEN ==================== -->
+  <div id="screen-success" class="screen">
+    <div class="container success-container">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h1 class="success-title">ALARM DISMISSED</h1>
+      <p class="success-subtitle">Mission complete. You're operational.</p>
+      <div class="glass-panel success-stats" id="success-stats"></div>
+      <div class="success-actions">
+        <button id="btn-share" class="btn btn-secondary">
+          <span class="btn-text">SHARE RESULTS</span>
+        </button>
+        <button id="btn-back-home" class="btn btn-primary">
+          <span class="btn-glow"></span>
+          <span class="btn-text">RETURN TO BASE</span>
+        </button>
+      </div>
+      <!-- Share modal -->
+      <div id="share-modal" class="share-modal hidden">
+        <div class="glass-panel share-content">
+          <h3>Share Your Results</h3>
+          <textarea id="share-text" readonly rows="6"></textarea>
+          <button id="btn-copy-share" class="btn btn-primary" style="margin-top:0.75rem;">
+            <span class="btn-text">COPY TO CLIPBOARD</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== BEDTIME SCREEN ==================== -->
+  <div id="screen-bedtime" class="screen">
+    <div class="container">
+      <div class="bedtime-reminder-screen">
+        <div class="moon-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </div>
+        <h1 class="bedtime-title">TIME TO SLEEP</h1>
+        <p class="bedtime-subtitle">Your alarm is set for <span id="bedtime-alarm-time" class="highlight"></span></p>
+        <p class="bedtime-subtitle">Get your <span id="bedtime-hours" class="highlight"></span> hours of rest.</p>
+        <button id="btn-dismiss-bedtime" class="btn btn-primary" style="margin-top:2rem;">
+          <span class="btn-glow"></span>
+          <span class="btn-text">GOT IT, GOOD NIGHT</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
