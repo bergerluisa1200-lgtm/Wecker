@@ -153,6 +153,8 @@ const state = {
   bedtimeShown: false,
   sleepHours: parseInt(localStorage.getItem('wakeup-sleep-hours') || '8'),
   facingMode: 'environment',
+  wakeLock: null,
+  vibrationInterval: null,
 };
 
 // ============================================================
@@ -601,6 +603,11 @@ $('#btn-set-alarm').addEventListener('click', () => {
   saveAlarms();
   renderAlarms();
   $('#alarm-time').value = '';
+
+  // Request notification permission so alarm can wake the phone
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 });
 
 renderAlarms();
@@ -1059,6 +1066,9 @@ function triggerAlarm(alarm, alarmIndex) {
 
   // Start alarm sound
   startAlarmSound(alarm.sound || 'siren');
+
+  // Fire system notification to wake the phone
+  fireAlarmNotification(alarm);
 }
 
 function buildChallengeDesc(resolved, isMulti) {
@@ -1465,6 +1475,61 @@ function stopAlarmSound() {
 }
 
 // ============================================================
+// ALARM NOTIFICATION (wakes phone from lock screen)
+// ============================================================
+function fireAlarmNotification(alarm) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const desc = alarm.challengeType === 'find-item' ? 'Find an item!' :
+                 alarm.challengeType === 'exercise' ? 'Do your exercise!' :
+                 alarm.challengeType === 'typing' ? 'Typing challenge!' : 'Solve math problems!';
+    const notif = new Notification('WAKE UP — Alarm!', {
+      body: `${alarm.time} — ${desc}`,
+      icon: './icons/icon-192.png',
+      tag: 'wakeup-alarm',
+      requireInteraction: true,
+      vibrate: [500, 300, 500, 300, 500],
+    });
+    notif.onclick = () => { window.focus(); notif.close(); };
+    // Auto-close after 2 minutes
+    setTimeout(() => notif.close(), 120000);
+  } catch (e) {}
+}
+
+// Keep-alive: when page becomes visible again, re-check alarms immediately
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Re-check alarms in case one was missed while phone was locked
+    if (!state.activeAlarm) {
+      checkAlarms(new Date());
+    }
+    // If alarm is active but sound isn't playing, restart it
+    if (state.activeAlarm && !state.audioCtx && !state.fallbackAudio) {
+      startAlarmSound(state.activeAlarm.sound || 'siren');
+    }
+  }
+});
+
+// Request wake lock to prevent phone from sleeping while alarms are set
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    state.wakeLock = await navigator.wakeLock.request('screen');
+    state.wakeLock.addEventListener('release', () => { state.wakeLock = null; });
+  } catch (e) {}
+}
+
+// Re-acquire wake lock when page becomes visible
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.alarms.length > 0 && !state.wakeLock) {
+    requestWakeLock();
+  }
+});
+
+// Request wake lock if there are alarms set
+if (state.alarms.length > 0) requestWakeLock();
+
+// ============================================================
 // START CHALLENGE
 // ============================================================
 $('#btn-start-challenge').addEventListener('click', () => {
@@ -1563,45 +1628,84 @@ async function startFindItemChallenge(alarm) {
 
 function getItemColorProfile(itemId) {
   const profiles = {
-    plant: { hueMin: 50, hueMax: 180, satMin: 15, valMin: 15, threshold: 0.06 },
-    fruit: { hueMin: 0, hueMax: 60, satMin: 25, valMin: 30, threshold: 0.04 },
-    banana: { hueMin: 25, hueMax: 70, satMin: 20, valMin: 30, threshold: 0.04 },
-    book: { detectByEdges: true, threshold: 0.06 },
-    notebook: { detectByEdges: true, threshold: 0.06 },
+    // Green items — hue 60-160, need decent saturation to be actually green
+    plant: { hueMin: 55, hueMax: 165, satMin: 25, valMin: 20, threshold: 0.10 },
+    // Red/orange items
+    fruit: { hueMin: 340, hueMax: 40, satMin: 35, valMin: 35, threshold: 0.06, hueWrap: true },
+    banana: { hueMin: 30, hueMax: 65, satMin: 35, valMin: 40, threshold: 0.06 },
+    // Blue items
+    towel: { hueMin: 180, hueMax: 260, satMin: 25, valMin: 20, threshold: 0.08 },
+    // Rectangular — use edge detection
+    book: { detectByEdges: true, threshold: 0.10 },
+    notebook: { detectByEdges: true, threshold: 0.10 },
+    // Brown/tan items
+    shoe: { hueMin: 15, hueMax: 45, satMin: 20, valMin: 15, threshold: 0.08 },
+    wallet: { hueMin: 10, hueMax: 40, satMin: 20, valMin: 10, threshold: 0.06 },
+    // White items — low saturation, high value
+    cup: { lowSat: true, valMin: 70, satMax: 20, threshold: 0.08 },
+    plate: { lowSat: true, valMin: 70, satMax: 20, threshold: 0.08 },
+    soap: { lowSat: true, valMin: 60, satMax: 25, threshold: 0.06 },
+    pillow: { lowSat: true, valMin: 60, satMax: 25, threshold: 0.08 },
   };
-  return profiles[itemId] || { detectBySize: true, threshold: 0.03 };
+  // Generic fallback: use edge + color variance detection — NOT brightness
+  return profiles[itemId] || { detectByVariance: true, threshold: 0.12 };
 }
 
 function detectItemByColor(imageData, profile, width, height) {
   const data = imageData.data;
-  // Scan most of the frame (10%-90%) so item doesn't need to be perfectly centered
-  const cx1 = Math.floor(width * 0.1), cx2 = Math.floor(width * 0.9);
-  const cy1 = Math.floor(height * 0.1), cy2 = Math.floor(height * 0.9);
+  const cx1 = Math.floor(width * 0.15), cx2 = Math.floor(width * 0.85);
+  const cy1 = Math.floor(height * 0.15), cy2 = Math.floor(height * 0.85);
   let matchCount = 0, edgeCount = 0, totalPixels = 0;
+
+  // For variance detection: sample baseline from edges of frame
+  let edgeR = 0, edgeG = 0, edgeB = 0, edgeSamples = 0;
+  if (profile.detectByVariance) {
+    for (let x = 0; x < width; x += 8) {
+      for (const y of [2, height - 3]) {
+        const i = (y * width + x) * 4;
+        edgeR += data[i]; edgeG += data[i + 1]; edgeB += data[i + 2];
+        edgeSamples++;
+      }
+    }
+    edgeR /= edgeSamples; edgeG /= edgeSamples; edgeB /= edgeSamples;
+  }
+
   for (let y = cy1; y < cy2; y += 3) {
     for (let x = cx1; x < cx2; x += 3) {
       totalPixels++;
       const i = (y * width + x) * 4;
       const r = data[i], g = data[i + 1], b = data[i + 2];
-      if (profile.hueMin !== undefined) {
+
+      if (profile.lowSat) {
+        // Detect white/light objects by low saturation + high brightness
         const hsv = rgbToHsv(r, g, b);
-        if (hsv[0] >= profile.hueMin && hsv[0] <= profile.hueMax && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matchCount++;
+        if (hsv[1] <= (profile.satMax || 20) && hsv[2] >= profile.valMin) matchCount++;
+      } else if (profile.hueMin !== undefined) {
+        const hsv = rgbToHsv(r, g, b);
+        let hueMatch;
+        if (profile.hueWrap) {
+          // For red: hue wraps around 360 (e.g., 340-360 + 0-40)
+          hueMatch = hsv[0] >= profile.hueMin || hsv[0] <= profile.hueMax;
+        } else {
+          hueMatch = hsv[0] >= profile.hueMin && hsv[0] <= profile.hueMax;
+        }
+        if (hueMatch && hsv[1] >= profile.satMin && hsv[2] >= profile.valMin) matchCount++;
       } else if (profile.detectByEdges) {
         if (x > cx1 + 3 && y > cy1 + 3) {
           const px = (y * width + (x - 3)) * 4, py = ((y - 3) * width + x) * 4;
           const dx = Math.abs(r - data[px]) + Math.abs(g - data[px + 1]) + Math.abs(b - data[px + 2]);
           const dy = Math.abs(r - data[py]) + Math.abs(g - data[py + 1]) + Math.abs(b - data[py + 2]);
-          if (dx + dy > 60) edgeCount++;
+          if (dx + dy > 70) edgeCount++;
         }
-      } else {
-        // Generic: detect any object that isn't a plain wall
-        const brightness = (r + g + b) / 3;
-        if (brightness > 20 && brightness < 245) matchCount++;
+      } else if (profile.detectByVariance) {
+        // Detect pixels that differ significantly from the frame edges (background)
+        const diff = Math.abs(r - edgeR) + Math.abs(g - edgeG) + Math.abs(b - edgeB);
+        if (diff > 80) matchCount++;
       }
     }
   }
-  if (profile.detectByEdges) return edgeCount / totalPixels > (profile.threshold || 0.06);
-  return matchCount / totalPixels > (profile.threshold || 0.03);
+  if (profile.detectByEdges) return edgeCount / totalPixels > (profile.threshold || 0.10);
+  return matchCount / totalPixels > (profile.threshold || 0.10);
 }
 
 function rgbToHsv(r, g, b) {
