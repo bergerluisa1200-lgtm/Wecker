@@ -807,12 +807,14 @@ body {
 /* ============================================================
    TYPING CHALLENGE
    ============================================================ */
-.typing-panel { text-align: left; }
+.typing-panel { text-align: left; overflow: hidden; }
 .typing-source {
   font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; line-height: 1.7;
   color: var(--text); padding: 1rem; border-radius: 10px;
   background: var(--input-bg); border: 1px solid var(--border);
-  margin-bottom: 1rem; white-space: pre-wrap; user-select: none;
+  margin-bottom: 1rem; white-space: pre-wrap; word-wrap: break-word;
+  overflow-wrap: break-word; max-width: 100%; overflow-x: hidden;
+  user-select: none;
 }
 .typing-source .char-correct { color: var(--success); }
 .typing-source .char-wrong { color: var(--danger); background: rgba(var(--danger-rgb), 0.15); border-radius: 2px; }

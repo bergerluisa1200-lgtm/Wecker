@@ -2278,7 +2278,7 @@ function startTypingChallenge(alarm) {
 
   // Render source text with character spans
   sourceEl.innerHTML = paragraph.split('').map((ch, i) =>
-    `<span class="char-pending" data-idx="${i}">${ch === ' ' ? '&nbsp;' : ch.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+    `<span class="char-pending" data-idx="${i}">${ch === ' ' ? ' ' : ch.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
   ).join('');
 
   inputEl.value = '';
