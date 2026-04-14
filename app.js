@@ -1634,24 +1634,12 @@ async function startFindItemChallenge(alarm) {
   const cocoLabels = ITEM_COCO_LABELS[alarm.item] || [];
   const MIN_CONFIDENCE = 0.45;
 
-  // Start loading the ML model in parallel with camera setup
-  let model = null;
-  if (useML) {
-    $('#find-status').textContent = 'LOADING AI MODEL...';
-    model = await loadCocoModel();
-  }
+  // Always load the ML model — used for detection (ML items) or person rejection (fallback items)
+  $('#find-status').textContent = 'LOADING AI MODEL...';
+  let model = await loadCocoModel();
 
   try {
-    try {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: 640, height: 480 },
-      });
-    } catch (_) {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-    video.srcObject = state.cameraStream;
-    video.setAttribute('playsinline', 'true');
-    await video.play();
+    await attachCamera(video);
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
     markCheck('check-camera');
@@ -1668,13 +1656,6 @@ async function startFindItemChallenge(alarm) {
   const HOLD_DURATION = 3000;
   let detecting = false; // Prevent overlapping ML calls
 
-  if (useML && !model) {
-    // ML failed to load — tell user, fall back to scene-change mode
-    $('#find-status').textContent = 'AI MODEL UNAVAILABLE — USING BACKUP DETECTION';
-  } else if (useML) {
-    $('#find-status').textContent = 'AI READY — SHOW THE ITEM';
-  }
-
   // Scene-change baseline for non-ML items
   const BASELINE_FRAMES = 15;
   const SCENE_CHANGE_THRESHOLD = 0.12;
@@ -1683,6 +1664,8 @@ async function startFindItemChallenge(alarm) {
 
   if (useFallback) {
     $('#find-status').textContent = 'SCANNING ENVIRONMENT — DO NOT SHOW ITEM YET...';
+  } else {
+    $('#find-status').textContent = 'AI READY — SHOW THE ITEM';
   }
 
   function buildBaseline() {
@@ -1789,7 +1772,7 @@ async function startFindItemChallenge(alarm) {
       detecting = false;
     }
 
-    // ---- Fallback: scene-change detection for items COCO-SSD can't recognize ----
+    // ---- Fallback: scene-change + anti-person check for items COCO-SSD can't classify ----
     if (useFallback) {
       if (frameCount <= BASELINE_FRAMES) {
         baselineFrames.push(frame);
@@ -1805,7 +1788,34 @@ async function startFindItemChallenge(alarm) {
       }
 
       const sceneChanged = hasSceneChange(frame);
-      if (sceneChanged && motionDetected) {
+
+      // Use COCO-SSD to reject if the camera mainly sees a person (feet, body, etc.)
+      if (sceneChanged && motionDetected && !detecting) {
+        detecting = true;
+        let personBlocking = false;
+        if (model) {
+          try {
+            const predictions = await model.detect(video);
+            const personPreds = predictions.filter(p => p.class === 'person' && p.score >= 0.4);
+            if (personPreds.length > 0) {
+              // Check if person detection covers a large part of the frame
+              const frameArea = canvas.width * canvas.height;
+              for (const p of personPreds) {
+                const boxArea = p.bbox[2] * p.bbox[3];
+                if (boxArea / frameArea > 0.08) { personBlocking = true; break; }
+              }
+            }
+          } catch (_) {}
+        }
+        detecting = false;
+
+        if (personBlocking) {
+          if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
+          $('#find-status').textContent = 'PERSON DETECTED — SHOW THE ITEM, NOT YOURSELF';
+          requestAnimationFrame(processFrame);
+          return;
+        }
+
         if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
         const elapsed = Date.now() - holdStartTime;
         const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
@@ -1820,9 +1830,9 @@ async function startFindItemChallenge(alarm) {
           setTimeout(() => { stopCamera(); onChallengeStepDone(); }, 1000);
           return;
         }
-      } else {
+      } else if (!sceneChanged) {
         if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
-        if (!sceneChanged) $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
+        $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
       }
     }
 
@@ -1859,14 +1869,7 @@ async function startExerciseChallenge(alarm) {
   const canvasCtx = canvas.getContext('2d');
 
   try {
-    try {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-    } catch (_) {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-    video.srcObject = state.cameraStream;
-    video.setAttribute('playsinline', 'true');
-    await video.play();
+    await attachCamera(video);
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
     $('#exercise-status').textContent = 'LOADING POSE DETECTION...';
@@ -2302,36 +2305,58 @@ $('#btn-copy-share').addEventListener('click', () => {
 $('#btn-back-home').addEventListener('click', () => showScreen('setup'));
 
 // ============================================================
-// CAMERA
+// CAMERA — shared stream, requested once
 // ============================================================
-function stopCamera() {
-  if (state.cameraStream) {
-    state.cameraStream.getTracks().forEach((t) => t.stop());
-    state.cameraStream = null;
+let _cameraStream = null;
+let _cameraFacing = 'environment';
+
+async function getCamera(facingMode) {
+  // Reuse existing stream if same facing mode and tracks are live
+  if (_cameraStream && _cameraFacing === facingMode) {
+    const tracks = _cameraStream.getTracks();
+    if (tracks.length > 0 && tracks[0].readyState === 'live') return _cameraStream;
   }
+  // Stop old stream before switching
+  if (_cameraStream) _cameraStream.getTracks().forEach(t => t.stop());
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facingMode, width: 640, height: 480 },
+    });
+  } catch (_) {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+  }
+  _cameraFacing = facingMode;
+  return _cameraStream;
+}
+
+async function attachCamera(videoEl, facingMode) {
+  const stream = await getCamera(facingMode || 'environment');
+  state.cameraStream = stream;
+  videoEl.srcObject = stream;
+  videoEl.setAttribute('playsinline', 'true');
+  await videoEl.play();
+  return stream;
+}
+
+function stopCamera() {
+  // Don't kill the stream — just detach. Keeps permission alive.
+  state.cameraStream = null;
+}
+
+function killCamera() {
+  if (_cameraStream) {
+    _cameraStream.getTracks().forEach((t) => t.stop());
+    _cameraStream = null;
+  }
+  state.cameraStream = null;
 }
 
 async function flipCamera(videoEl) {
-  // Toggle facing mode
-  state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
-  // Stop current stream
-  if (state.cameraStream) {
-    state.cameraStream.getTracks().forEach((t) => t.stop());
-  }
+  _cameraFacing = _cameraFacing === 'environment' ? 'user' : 'environment';
   try {
-    try {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: state.facingMode, width: 640, height: 480 },
-      });
-    } catch (_) {
-      state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-    videoEl.srcObject = state.cameraStream;
-    videoEl.setAttribute('playsinline', 'true');
-    await videoEl.play();
+    await attachCamera(videoEl, _cameraFacing);
   } catch (err) {
-    // If flip fails, try the other direction
-    state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+    _cameraFacing = _cameraFacing === 'environment' ? 'user' : 'environment';
   }
 }
 
