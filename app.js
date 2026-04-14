@@ -336,6 +336,13 @@ function loadUserSession(username, displayName) {
   updateStats();
   updateTomorrowPreview();
   updateBedtimeDisplay();
+
+  // Request notification permission so alarms work when app is closed
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  // Sync existing alarms to service worker
+  syncAlarmsToServiceWorker();
 }
 
 // Override save functions to be user-scoped
@@ -654,6 +661,15 @@ function renderAlarms() {
 
 function saveAlarms() {
   _origSaveAlarms();
+  syncAlarmsToServiceWorker();
+}
+
+function syncAlarmsToServiceWorker() {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.controller.postMessage({
+    type: 'SYNC_ALARMS',
+    alarms: state.alarms,
+  });
 }
 
 $('#btn-set-alarm').addEventListener('click', () => {
@@ -1586,8 +1602,21 @@ document.addEventListener('visibilitychange', () => {
     if (state.activeAlarm && !state.audioCtx && !state.fallbackAudio) {
       startAlarmSound(state.activeAlarm.sound || 'siren');
     }
+    syncAlarmsToServiceWorker();
   }
 });
+
+// Sync alarms to SW once it's ready
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(() => syncAlarmsToServiceWorker());
+  // Listen for alarm fired by SW when page was closed
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'ALARM_FIRED') {
+      // SW fired an alarm while we were away — check and trigger it now
+      if (!state.activeAlarm) checkAlarms(new Date());
+    }
+  });
+}
 
 // Request wake lock to prevent phone from sleeping while alarms are set
 async function requestWakeLock() {
