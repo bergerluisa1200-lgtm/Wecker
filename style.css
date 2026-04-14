@@ -458,6 +458,40 @@ body {
 .diff-badge.medium { background: rgba(var(--warning-rgb), 0.15); color: var(--warning); }
 .diff-badge.hard { background: rgba(var(--danger-rgb), 0.15); color: var(--danger); }
 
+/* Alarm tip modal */
+.alarm-tip-modal {
+  position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.7); padding: 1.5rem; animation: fadeIn 0.3s;
+}
+.alarm-tip-modal.hidden { display: none; }
+.alarm-tip-content {
+  max-width: 360px; width: 100%; padding: 2rem 1.5rem; text-align: center;
+}
+.alarm-tip-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.alarm-tip-title {
+  font-family: 'Orbitron', sans-serif; font-size: 0.85rem; letter-spacing: 0.12em;
+  color: var(--primary); margin-bottom: 1rem;
+}
+.alarm-tip-text {
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem; color: var(--text-dim);
+  line-height: 1.5; margin-bottom: 0.75rem;
+}
+.alarm-tip-text strong { color: var(--text); }
+.alarm-tip-actions { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.alarm-tip-btn { width: 100%; }
+.alarm-tip-dismiss {
+  background: none; border: none; color: var(--text-muted); font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem; cursor: pointer; padding: 0.4rem;
+}
+.alarm-tip-dismiss:hover { color: var(--text-dim); }
+.phone-alarm-note {
+  display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 0.75rem;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; color: var(--text-muted);
+  line-height: 1.4; padding: 0.6rem 0.75rem; border-radius: 10px;
+  background: rgba(var(--primary-rgb), 0.06); border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+.phone-alarm-note svg { flex-shrink: 0; margin-top: 1px; color: var(--primary); opacity: 0.6; }
+
 .alarm-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
 .btn-calendar {
   background: rgba(var(--primary-rgb), 0.1); border: 1px solid rgba(var(--primary-rgb), 0.2);

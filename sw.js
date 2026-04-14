@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wakeup-v22';
+const CACHE_NAME = 'wakeup-v23';
 const ASSETS = [
   './',
   './index.html',

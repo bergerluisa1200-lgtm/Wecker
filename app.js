@@ -719,6 +719,47 @@ function downloadAlarmICS(alarm) {
   URL.revokeObjectURL(url);
 }
 
+function showAlarmTip(time) {
+  // Don't show if user dismissed it before
+  if (localStorage.getItem('wakeup-tip-dismissed')) return;
+
+  let tip = document.getElementById('alarm-tip-modal');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'alarm-tip-modal';
+    tip.className = 'alarm-tip-modal';
+    document.body.appendChild(tip);
+  }
+  tip.innerHTML = `
+    <div class="alarm-tip-content glass-panel">
+      <div class="alarm-tip-icon">⏰</div>
+      <h3 class="alarm-tip-title">SET A PHONE ALARM TOO</h3>
+      <p class="alarm-tip-text">
+        Open your phone's <strong>Clock app</strong> and set an alarm for <strong>${time}</strong>.
+      </p>
+      <p class="alarm-tip-text">
+        Your phone alarm wakes you up with a loud sound.<br>
+        Then open <strong>WAKE UP</strong> to complete the challenge and stay awake.
+      </p>
+      <div class="alarm-tip-actions">
+        <button class="btn btn-primary alarm-tip-btn" id="alarm-tip-ok">
+          <span class="btn-glow"></span>
+          <span class="btn-text">GOT IT</span>
+        </button>
+        <button class="alarm-tip-dismiss" id="alarm-tip-never">DON'T SHOW AGAIN</button>
+      </div>
+    </div>
+  `;
+  tip.classList.remove('hidden');
+  document.getElementById('alarm-tip-ok').addEventListener('click', () => {
+    tip.classList.add('hidden');
+  });
+  document.getElementById('alarm-tip-never').addEventListener('click', () => {
+    tip.classList.add('hidden');
+    localStorage.setItem('wakeup-tip-dismissed', '1');
+  });
+}
+
 function saveAlarms() {
   _origSaveAlarms();
   syncAlarmsToServiceWorker();
@@ -764,13 +805,12 @@ $('#btn-set-alarm').addEventListener('click', () => {
     Notification.requestPermission();
   }
 
-  // On iOS, prompt to save to calendar for reliable alarm
+  // On mobile, show tip to set a matching phone alarm
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (isIOS) {
+  const isMobile = isIOS || /Android/.test(navigator.userAgent);
+  if (isMobile) {
     setTimeout(() => {
-      if (confirm('Save this alarm to your iPhone Calendar?\n\nThis ensures your phone wakes you up even if the app is closed.')) {
-        downloadAlarmICS(alarm);
-      }
+      showAlarmTip(alarm.time);
     }, 300);
   }
 });
