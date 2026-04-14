@@ -168,17 +168,50 @@ body {
    HEADER / LOGO
    ============================================================ */
 .header-block { text-align: center; margin-bottom: 2rem; }
-.logo-mark { position: relative; width: 60px; height: 60px; margin: 0 auto 1rem; }
-.logo-ring {
-  position: absolute; inset: 0; border: 2px solid var(--primary); border-radius: 50%;
-  opacity: 0.3; animation: ringPulse 3s ease-in-out infinite;
+.logo-mark {
+  position: relative; width: 64px; height: 64px; margin: 0 auto 1rem;
+  filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.5));
+  animation: clockGlow 3s ease-in-out infinite;
 }
-.ring-2 { inset: 8px; border-color: var(--secondary); animation-delay: -1.5s; }
-.logo-dot {
-  position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
-  background: var(--primary); border-radius: 50%; box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.6);
+.logo-clock-face {
+  position: absolute; top: 10px; left: 5px; width: 54px; height: 54px;
+  border: 3px solid var(--primary); border-radius: 50%;
+  box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.3), inset 0 0 8px rgba(var(--primary-rgb), 0.1);
 }
-@keyframes ringPulse { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.15); opacity: 0.6; } }
+.logo-hand {
+  position: absolute; left: 50%; bottom: 50%; transform-origin: bottom center;
+  border-radius: 2px;
+}
+.logo-hand-min {
+  width: 3px; height: 18px; margin-left: -1.5px; margin-bottom: -3px;
+  background: var(--primary);
+  animation: minuteHand 10s linear infinite;
+}
+.logo-hand-hr {
+  width: 3px; height: 13px; margin-left: -1.5px; margin-bottom: -3px;
+  background: var(--accent);
+  animation: hourHand 30s linear infinite;
+}
+.logo-center-dot {
+  position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+  margin: -3px 0 0 -3px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.6);
+}
+.logo-bell {
+  position: absolute; top: 2px; width: 14px; height: 14px;
+  border: 2.5px solid var(--secondary); border-radius: 50%;
+}
+.logo-bell-left { left: 4px; }
+.logo-bell-right { right: 4px; }
+.logo-bell::after {
+  content: ''; position: absolute; bottom: -4px; width: 2.5px; height: 10px;
+  background: var(--secondary); border-radius: 1px;
+}
+.logo-bell-left::after { right: -1px; transform: rotate(-30deg); }
+.logo-bell-right::after { left: -1px; transform: rotate(30deg); }
+@keyframes clockGlow { 0%, 100% { filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.4)); } 50% { filter: drop-shadow(0 0 20px rgba(var(--primary-rgb), 0.7)); } }
+@keyframes minuteHand { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes hourHand { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .title {
   font-family: 'Orbitron', sans-serif; font-size: 2.8rem; font-weight: 900; letter-spacing: 0.15em;
@@ -845,6 +878,26 @@ body {
   font-size: 0.65rem; letter-spacing: 0.15em; cursor: pointer; transition: all 0.3s;
 }
 .btn-register:hover { border-color: var(--primary); color: var(--primary); }
+.account-picker { margin-bottom: 0.5rem; }
+.account-picker-label {
+  font-family: 'Orbitron', sans-serif; font-size: 0.5rem; letter-spacing: 0.15em;
+  color: var(--text-muted); margin-bottom: 0.5rem;
+}
+.account-btn {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.6rem 0.75rem;
+  background: rgba(var(--primary-rgb), 0.06); border: 1px solid var(--glass-border);
+  border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-bottom: 0.4rem;
+}
+.account-btn:hover { border-color: var(--primary); background: rgba(var(--primary-rgb), 0.12); }
+.account-avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff; font-family: 'Orbitron', sans-serif; font-size: 0.55rem; font-weight: 700;
+  letter-spacing: 0.05em; flex-shrink: 0;
+}
+.account-name {
+  font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--text);
+}
 .user-badge {
   position: fixed; top: 1.25rem; left: 1.25rem; z-index: 1000;
   display: flex; align-items: center; gap: 0.5rem;

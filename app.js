@@ -189,6 +189,57 @@ function hashPassword(password) {
 
 let isRegisterMode = false;
 
+// Pre-fill last used username for quick sign-in
+(function prefillUsername() {
+  const lastUser = localStorage.getItem('wakeup-last-user');
+  if (lastUser) {
+    $('#login-username').value = lastUser;
+    // Focus password field so they can just type and go
+    setTimeout(() => $('#login-password').focus(), 100);
+  }
+})();
+
+// Show existing accounts for quick selection
+function renderAccountPicker() {
+  const users = getUsers();
+  const usernames = Object.keys(users);
+  let picker = document.getElementById('account-picker');
+  if (!picker) {
+    picker = document.createElement('div');
+    picker.id = 'account-picker';
+    picker.className = 'account-picker';
+    // Insert before the login divider ("OR")
+    const divider = document.querySelector('.login-divider');
+    if (divider) divider.parentNode.insertBefore(picker, divider);
+  }
+  if (usernames.length === 0) {
+    picker.classList.add('hidden');
+    return;
+  }
+  picker.classList.remove('hidden');
+  picker.innerHTML = '<div class="account-picker-label">SAVED ACCOUNTS</div>' +
+    usernames.map(u => {
+      const initials = (users[u].displayName || u).substring(0, 2).toUpperCase();
+      const name = users[u].displayName || u;
+      return `<button class="account-btn" data-user="${u}">
+        <span class="account-avatar">${initials}</span>
+        <span class="account-name">${name}</span>
+      </button>`;
+    }).join('');
+
+  picker.querySelectorAll('.account-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const u = btn.dataset.user;
+      $('#login-username').value = u;
+      $('#login-password').value = '';
+      $('#login-password').focus();
+      if (isRegisterMode) $('#btn-toggle-register').click(); // switch to sign-in
+      $('#login-error').classList.add('hidden');
+    });
+  });
+}
+renderAccountPicker();
+
 $('#btn-toggle-register').addEventListener('click', () => {
   isRegisterMode = !isRegisterMode;
   $('#login-panel-title').textContent = isRegisterMode ? 'CREATE ACCOUNT' : 'SIGN IN';
@@ -196,8 +247,12 @@ $('#btn-toggle-register').addEventListener('click', () => {
   $('#btn-toggle-register').textContent = isRegisterMode ? 'BACK TO SIGN IN' : 'CREATE NEW ACCOUNT';
   $('#register-name-row').classList.toggle('hidden', !isRegisterMode);
   $('#login-error').classList.add('hidden');
+  // Hide account picker in register mode
+  const picker = document.getElementById('account-picker');
+  if (picker) picker.classList.toggle('hidden', isRegisterMode);
 });
 
+// Auto-detect: if username exists, sign in; if not, prompt to create account
 $('#btn-login').addEventListener('click', () => {
   const username = $('#login-username').value.trim();
   const password = $('#login-password').value;
@@ -215,7 +270,7 @@ $('#btn-login').addEventListener('click', () => {
   if (isRegisterMode) {
     const displayName = $('#register-name').value.trim() || username;
     if (users[username]) {
-      errorEl.textContent = 'Username already exists.';
+      errorEl.textContent = 'Username already exists. Switch to Sign In.';
       errorEl.classList.remove('hidden');
       return;
     }
@@ -227,19 +282,30 @@ $('#btn-login').addEventListener('click', () => {
     users[username] = { password: hashed, displayName };
     saveUsers(users);
     setCurrentUser(username);
+    localStorage.setItem('wakeup-last-user', username);
     loadUserSession(username, displayName);
   } else {
-    if (!users[username] || users[username].password !== hashed) {
-      errorEl.textContent = 'Invalid username or password.';
+    // Auto-detect: if username doesn't exist, suggest creating account
+    if (!users[username]) {
+      errorEl.textContent = 'Account not found. Click "CREATE NEW ACCOUNT" to register.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    if (users[username].password !== hashed) {
+      errorEl.textContent = 'Wrong password.';
       errorEl.classList.remove('hidden');
       return;
     }
     setCurrentUser(username);
+    localStorage.setItem('wakeup-last-user', username);
     loadUserSession(username, users[username].displayName);
   }
 });
 
 // Enter key to submit
+$('#login-username').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#login-password').focus(); }
+});
 $('#login-password').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') $('#btn-login').click();
 });
@@ -279,11 +345,15 @@ const _origSaveHistory = function() {
 $('#btn-logout').addEventListener('click', () => {
   localStorage.removeItem('wakeup-current-user');
   $('#user-badge').classList.add('hidden');
-  // Reset form
-  $('#login-username').value = '';
+  // Pre-fill last username for quick re-login
+  const lastUser = localStorage.getItem('wakeup-last-user');
+  $('#login-username').value = lastUser || '';
   $('#login-password').value = '';
   $('#login-error').classList.add('hidden');
+  if (isRegisterMode) $('#btn-toggle-register').click(); // switch back to sign-in
+  renderAccountPicker();
   showScreen('login');
+  if (lastUser) setTimeout(() => $('#login-password').focus(), 100);
 });
 
 // Auto-login if session exists
