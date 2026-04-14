@@ -367,6 +367,10 @@ $('#btn-logout').addEventListener('click', () => {
 // POPULATE SELECTS
 // ============================================================
 const itemSelect = $('#item-select');
+const randomItemOpt = document.createElement('option');
+randomItemOpt.value = 'random';
+randomItemOpt.textContent = '🎲 Random Item';
+itemSelect.appendChild(randomItemOpt);
 ITEMS.forEach((item) => {
   const opt = document.createElement('option');
   opt.value = item.id;
@@ -375,6 +379,10 @@ ITEMS.forEach((item) => {
 });
 
 const exerciseSelect = $('#exercise-select');
+const randomExOpt = document.createElement('option');
+randomExOpt.value = 'random';
+randomExOpt.textContent = '🎲 Random Exercise';
+exerciseSelect.appendChild(randomExOpt);
 EXERCISES.forEach((ex) => {
   const opt = document.createElement('option');
   opt.value = ex.id;
@@ -603,8 +611,19 @@ function renderAlarms() {
     } else if (alarm.mode === 'math') {
       challengeText = '<span class="challenge-tag-inline">MATH</span> Solve problems';
     } else if (alarm.mode === 'find-item') {
-      const item = ITEMS.find((it) => it.id === alarm.item);
-      challengeText = `<span class="challenge-tag-inline">FIND</span> ${item ? item.icon + ' ' + item.name : alarm.item}`;
+      if (alarm.item === 'random') {
+        challengeText = '<span class="challenge-tag-inline">FIND</span> 🎲 Random Item';
+      } else {
+        const item = ITEMS.find((it) => it.id === alarm.item);
+        challengeText = `<span class="challenge-tag-inline">FIND</span> ${item ? item.icon + ' ' + item.name : alarm.item}`;
+      }
+    } else if (alarm.mode === 'exercise') {
+      if (alarm.exercise === 'random') {
+        challengeText = '<span class="challenge-tag-inline">EXERCISE</span> 🎲 Random Exercise';
+      } else {
+        const ex = EXERCISES.find((e) => e.id === alarm.exercise);
+        challengeText = `<span class="challenge-tag-inline">EXERCISE</span> ${ex ? ex.name : alarm.exercise}`;
+      }
     } else {
       const ex = EXERCISES.find((e) => e.id === alarm.exercise);
       challengeText = `<span class="challenge-tag-inline">EXERCISE</span> ${ex ? ex.name : alarm.exercise}`;
@@ -1230,8 +1249,16 @@ function triggerAlarm(alarm, alarmIndex) {
     resolved.challengeType = 'math';
   } else if (alarm.mode === 'exercise') {
     resolved.challengeType = 'exercise';
+    if (alarm.exercise === 'random') {
+      const pool = filterByDifficulty(EXERCISES, difficulty);
+      resolved.exercise = pool[Math.floor(Math.random() * pool.length)].id;
+    }
   } else if (alarm.mode === 'find-item') {
     resolved.challengeType = 'find-item';
+    if (alarm.item === 'random') {
+      const pool = filterByDifficulty(ITEMS, difficulty);
+      resolved.item = pool[Math.floor(Math.random() * pool.length)].id;
+    }
   } else if (alarm.mode === 'typing') {
     resolved.challengeType = 'typing';
   }
