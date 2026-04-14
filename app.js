@@ -1571,7 +1571,7 @@ const ITEM_COCO_LABELS = {
   cup: ['cup'],
   spoon: ['spoon'],
   fork: ['fork'],
-  plate: ['bowl', 'dining table'],
+  plate: ['bowl'],
   bottle: ['bottle'],
   fruit: ['apple', 'orange', 'banana'],
   banana: ['banana'],
@@ -1632,7 +1632,7 @@ async function startFindItemChallenge(alarm) {
 
   const useML = itemUsesML(alarm.item);
   const cocoLabels = ITEM_COCO_LABELS[alarm.item] || [];
-  const MIN_CONFIDENCE = 0.45;
+  const MIN_CONFIDENCE = 0.55;
 
   // Always load the ML model — used for detection (ML items) or person rejection (fallback items)
   $('#find-status').textContent = 'LOADING AI MODEL...';
@@ -1658,7 +1658,7 @@ async function startFindItemChallenge(alarm) {
 
   // Scene-change baseline for non-ML items
   const BASELINE_FRAMES = 15;
-  const SCENE_CHANGE_THRESHOLD = 0.12;
+  const SCENE_CHANGE_THRESHOLD = 0.18;
   let baselineFrames = [], baselineData = null, frameCount = 0;
   const useFallback = !useML || !model;
 
@@ -1738,15 +1738,25 @@ async function startFindItemChallenge(alarm) {
       try {
         const predictions = await model.detect(video);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // redraw clean frame
-        let found = false;
+
+        // Find the best matching prediction for the target item
+        let bestMatch = null;
+        let bestWrongLabel = null;
         for (const pred of predictions) {
+          if (pred.score < 0.3) continue; // ignore very low confidence
           if (cocoLabels.includes(pred.class) && pred.score >= MIN_CONFIDENCE) {
-            drawDetectionBox(pred);
-            found = true;
+            if (!bestMatch || pred.score > bestMatch.score) bestMatch = pred;
+          } else if (pred.class !== 'person' && pred.score >= MIN_CONFIDENCE) {
+            // Track highest-confidence wrong item to warn the user
+            if (!bestWrongLabel || pred.score > bestWrongLabel.score) bestWrongLabel = pred;
           }
         }
 
-        if (found && motionDetected) {
+        if (bestMatch) {
+          drawDetectionBox(bestMatch);
+        }
+
+        if (bestMatch && motionDetected) {
           if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
           const elapsed = Date.now() - holdStartTime;
           const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
@@ -1764,12 +1774,18 @@ async function startFindItemChallenge(alarm) {
           }
         } else {
           if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
-          $('#find-status').textContent = 'LOOKING FOR ITEM...';
+          if (bestWrongLabel) {
+            $('#find-status').textContent = `WRONG ITEM — detected "${bestWrongLabel.class}", need ${item ? item.name : alarm.item}`;
+          } else {
+            $('#find-status').textContent = 'LOOKING FOR ITEM...';
+          }
         }
       } catch (e) {
         console.error('Detection error:', e);
       }
       detecting = false;
+      requestAnimationFrame(processFrame);
+      return;
     }
 
     // ---- Fallback: scene-change + anti-person check for items COCO-SSD can't classify ----
@@ -1796,14 +1812,10 @@ async function startFindItemChallenge(alarm) {
         if (model) {
           try {
             const predictions = await model.detect(video);
-            const personPreds = predictions.filter(p => p.class === 'person' && p.score >= 0.4);
+            const personPreds = predictions.filter(p => p.class === 'person' && p.score >= 0.3);
             if (personPreds.length > 0) {
-              // Check if person detection covers a large part of the frame
-              const frameArea = canvas.width * canvas.height;
-              for (const p of personPreds) {
-                const boxArea = p.bbox[2] * p.bbox[3];
-                if (boxArea / frameArea > 0.08) { personBlocking = true; break; }
-              }
+              // Any person detection blocks — even partial body/feet
+              personBlocking = true;
             }
           } catch (_) {}
         }
