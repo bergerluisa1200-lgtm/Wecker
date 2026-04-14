@@ -54,9 +54,12 @@
     <div class="container login-container">
       <div class="login-logo">
         <div class="logo-mark">
-          <div class="logo-ring"></div>
-          <div class="logo-ring ring-2"></div>
-          <div class="logo-dot"></div>
+          <div class="logo-clock-face"></div>
+          <div class="logo-hand logo-hand-min"></div>
+          <div class="logo-hand logo-hand-hr"></div>
+          <div class="logo-center-dot"></div>
+          <div class="logo-bell logo-bell-left"></div>
+          <div class="logo-bell logo-bell-right"></div>
         </div>
         <h1 class="title">WAKE <span class="title-sep">//</span> UP</h1>
         <p class="subtitle">NEURAL ALARM SYSTEM <span class="ver">v3.0</span></p>
@@ -112,9 +115,12 @@
     <div class="container">
       <div class="header-block">
         <div class="logo-mark">
-          <div class="logo-ring"></div>
-          <div class="logo-ring ring-2"></div>
-          <div class="logo-dot"></div>
+          <div class="logo-clock-face"></div>
+          <div class="logo-hand logo-hand-min"></div>
+          <div class="logo-hand logo-hand-hr"></div>
+          <div class="logo-center-dot"></div>
+          <div class="logo-bell logo-bell-left"></div>
+          <div class="logo-bell logo-bell-right"></div>
         </div>
         <h1 class="title">WAKE <span class="title-sep">//</span> UP</h1>
         <p class="subtitle">NEURAL ALARM SYSTEM <span class="ver">v3.0</span></p>
@@ -602,7 +608,15 @@
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        // Check for updates every time the page loads
+        reg.update();
+        // When a new SW takes over, reload to get fresh content
+        var refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          if (!refreshing) { refreshing = true; window.location.reload(); }
+        });
+      }).catch(function() {});
     }
   </script>
 </body>
