@@ -782,6 +782,7 @@ function showAlarmTip(time) {
 function saveAlarms() {
   _origSaveAlarms();
   syncAlarmsToServiceWorker();
+  if (typeof updateKeepAlive === 'function') updateKeepAlive();
 }
 
 function syncAlarmsToServiceWorker() {
@@ -1773,6 +1774,76 @@ document.addEventListener('visibilitychange', () => {
 
 // Request wake lock if there are alarms set
 if (state.alarms.length > 0) requestWakeLock();
+
+// ============================================================
+// SILENT AUDIO KEEP-ALIVE (prevents iOS from suspending the tab)
+// ============================================================
+let keepAliveAudio = null;
+let keepAliveInterval = null;
+
+function startKeepAlive() {
+  if (keepAliveAudio) return; // already running
+  try {
+    // Create a 10-second silent WAV (very small, loops forever)
+    const sampleRate = 8000;
+    const duration = 10;
+    const numSamples = sampleRate * duration;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+    const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+    // All samples stay 0 = silence
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    keepAliveAudio = new Audio(url);
+    keepAliveAudio.loop = true;
+    keepAliveAudio.volume = 0.01; // near-silent
+    keepAliveAudio.play().catch(() => {});
+
+    // Also periodically nudge the audio context to stay alive
+    keepAliveInterval = setInterval(() => {
+      if (keepAliveAudio && keepAliveAudio.paused) {
+        keepAliveAudio.play().catch(() => {});
+      }
+    }, 30000);
+  } catch (e) {}
+}
+
+function stopKeepAlive() {
+  if (keepAliveAudio) {
+    keepAliveAudio.pause();
+    keepAliveAudio.src = '';
+    keepAliveAudio = null;
+  }
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
+}
+
+function updateKeepAlive() {
+  if (state.alarms.length > 0) {
+    startKeepAlive();
+  } else {
+    stopKeepAlive();
+  }
+}
+
+// Start keep-alive if alarms exist
+updateKeepAlive();
 
 // ============================================================
 // START CHALLENGE
