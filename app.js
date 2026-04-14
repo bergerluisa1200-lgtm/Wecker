@@ -285,10 +285,19 @@ $('#btn-login').addEventListener('click', () => {
     localStorage.setItem('wakeup-last-user', username);
     loadUserSession(username, displayName);
   } else {
-    // Auto-detect: if username doesn't exist, suggest creating account
+    // Auto-create: if username doesn't exist, create account automatically
     if (!users[username]) {
-      errorEl.textContent = 'Account not found. Click "CREATE NEW ACCOUNT" to register.';
-      errorEl.classList.remove('hidden');
+      if (password.length < 4) {
+        errorEl.textContent = 'Password must be at least 4 characters.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      users[username] = { password: hashed, displayName: username };
+      saveUsers(users);
+      setCurrentUser(username);
+      localStorage.setItem('wakeup-last-user', username);
+      renderAccountPicker();
+      loadUserSession(username, username);
       return;
     }
     if (users[username].password !== hashed) {
