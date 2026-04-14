@@ -458,6 +458,13 @@ body {
 .diff-badge.medium { background: rgba(var(--warning-rgb), 0.15); color: var(--warning); }
 .diff-badge.hard { background: rgba(var(--danger-rgb), 0.15); color: var(--danger); }
 
+.alarm-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+.btn-calendar {
+  background: rgba(var(--primary-rgb), 0.1); border: 1px solid rgba(var(--primary-rgb), 0.2);
+  color: var(--primary); border-radius: 10px; padding: 0.5rem 0.75rem; cursor: pointer;
+  font-family: 'Orbitron', sans-serif; font-size: 0.55rem; letter-spacing: 0.1em; transition: all 0.3s;
+}
+.btn-calendar:hover { background: rgba(var(--primary-rgb), 0.2); box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15); }
 .btn-delete {
   background: rgba(var(--danger-rgb), 0.1); border: 1px solid rgba(var(--danger-rgb), 0.2);
   color: var(--danger); border-radius: 10px; padding: 0.5rem 0.75rem; cursor: pointer;

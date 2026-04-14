@@ -621,9 +621,18 @@ function renderAlarms() {
         <span class="time">${alarm.time}</span>
         <span class="challenge">${challengeText}<span class="diff-badge ${diffClass}">${diffClass.toUpperCase()}</span>${repeatText}</span>
       </div>
-      <button class="btn-delete" data-index="${i}">REMOVE</button>
+      <div class="alarm-actions">
+        <button class="btn-calendar" data-index="${i}" title="Save to iPhone Calendar">CAL</button>
+        <button class="btn-delete" data-index="${i}">REMOVE</button>
+      </div>
     `;
     list.appendChild(div);
+  });
+  list.querySelectorAll('.btn-calendar').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const alarm = state.alarms[parseInt(btn.dataset.index)];
+      downloadAlarmICS(alarm);
+    });
   });
   list.querySelectorAll('.btn-delete').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -635,6 +644,79 @@ function renderAlarms() {
   });
   updateBedtimeDisplay();
   updateTomorrowPreview();
+}
+
+function downloadAlarmICS(alarm) {
+  const [h, m] = alarm.time.split(':').map(Number);
+  const now = new Date();
+
+  // Find next occurrence of this alarm
+  let alarmDate = new Date(now);
+  alarmDate.setHours(h, m, 0, 0);
+  if (alarmDate <= now) alarmDate.setDate(alarmDate.getDate() + 1);
+
+  // For repeating alarms, find the right day
+  if (alarm.repeat === 'weekdays') {
+    while (alarmDate.getDay() === 0 || alarmDate.getDay() === 6) alarmDate.setDate(alarmDate.getDate() + 1);
+  } else if (alarm.repeat === 'weekends') {
+    while (alarmDate.getDay() !== 0 && alarmDate.getDay() !== 6) alarmDate.setDate(alarmDate.getDate() + 1);
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatDate = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+
+  const endDate = new Date(alarmDate);
+  endDate.setMinutes(endDate.getMinutes() + 5);
+
+  // RRULE for repeating alarms
+  let rrule = '';
+  if (alarm.repeat === 'daily') {
+    rrule = 'RRULE:FREQ=DAILY\n';
+  } else if (alarm.repeat === 'weekdays') {
+    rrule = 'RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR\n';
+  } else if (alarm.repeat === 'weekends') {
+    rrule = 'RRULE:FREQ=WEEKLY;BYDAY=SA,SU\n';
+  } else if (alarm.repeat === 'custom' && alarm.customDays && alarm.customDays.length > 0) {
+    const dayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const days = alarm.customDays.map(d => dayMap[d]).join(',');
+    rrule = `RRULE:FREQ=WEEKLY;BYDAY=${days}\n`;
+  }
+
+  const uid = `wakeup-${alarm.time}-${Date.now()}@wakeup`;
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//WAKE UP//Alarm//EN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTART:${formatDate(alarmDate)}`,
+    `DTEND:${formatDate(endDate)}`,
+    `SUMMARY:⏰ WAKE UP — ${alarm.time}`,
+    'DESCRIPTION:Open WAKE UP app to dismiss your alarm!',
+    rrule ? rrule.trim() : '',
+    'BEGIN:VALARM',
+    'TRIGGER:PT0S',
+    'ACTION:AUDIO',
+    'DESCRIPTION:WAKE UP!',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT1M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Alarm in 1 minute — open WAKE UP app',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean).join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `wakeup-${alarm.time.replace(':', '')}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function saveAlarms() {
@@ -680,6 +762,16 @@ $('#btn-set-alarm').addEventListener('click', () => {
   // Request notification permission so alarm can wake the phone
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
+  }
+
+  // On iOS, prompt to save to calendar for reliable alarm
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    setTimeout(() => {
+      if (confirm('Save this alarm to your iPhone Calendar?\n\nThis ensures your phone wakes you up even if the app is closed.')) {
+        downloadAlarmICS(alarm);
+      }
+    }, 300);
   }
 });
 
