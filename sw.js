@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wakeup-v19';
+const CACHE_NAME = 'wakeup-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/alarm-sound.wav',
 ];
 
 // ============================================================
@@ -153,7 +154,8 @@ async function fireBackgroundNotification(alarm) {
       badge: './icons/icon-192.png',
       tag: 'wakeup-alarm-' + alarm.time,
       requireInteraction: true,
-      vibrate: [500, 300, 500, 300, 500, 300, 500],
+      vibrate: [500, 300, 500, 300, 500, 300, 500, 300, 500, 300, 500],
+      sound: './icons/alarm-sound.wav',
       actions: [
         { action: 'open', title: 'DISMISS ALARM' },
       ],
