@@ -10,51 +10,29 @@ const $$ = (sel) => document.querySelectorAll(sel);
 // ============================================================
 const ITEMS = [
   // Clothing
-  { id: 'shoe', name: 'A Shoe', icon: '\uD83D\uDC5F', category: 'clothing', difficulty: 'easy' },
-  { id: 'sock', name: 'A Sock', icon: '\uD83E\uDDE6', category: 'clothing', difficulty: 'easy' },
-  { id: 'hat', name: 'A Hat', icon: '\uD83E\uDDE2', category: 'clothing', difficulty: 'medium' },
-  { id: 'jacket', name: 'A Jacket', icon: '\uD83E\uDDE5', category: 'clothing', difficulty: 'easy' },
-  { id: 'sunglasses', name: 'Sunglasses', icon: '\uD83D\uDD76\uFE0F', category: 'clothing', difficulty: 'medium' },
-  { id: 'watch', name: 'A Watch', icon: '\u231A', category: 'clothing', difficulty: 'medium' },
+  { id: 'watch', name: 'A Watch / Clock', icon: '\u231A', category: 'clothing', difficulty: 'medium' },
   { id: 'backpack', name: 'A Backpack', icon: '\uD83C\uDF92', category: 'clothing', difficulty: 'medium' },
-  { id: 'scarf', name: 'A Scarf', icon: '\uD83E\uDDE3', category: 'clothing', difficulty: 'hard' },
-  { id: 'belt', name: 'A Belt', icon: '\uD83D\uDC5C', category: 'clothing', difficulty: 'hard' },
+  { id: 'scarf', name: 'A Scarf / Tie', icon: '\uD83E\uDDE3', category: 'clothing', difficulty: 'hard' },
   // Home
   { id: 'plant', name: 'A Plant', icon: '\uD83C\uDF3F', category: 'home', difficulty: 'easy' },
-  { id: 'pillow', name: 'A Pillow', icon: '\uD83D\uDECF\uFE0F', category: 'home', difficulty: 'easy' },
-  { id: 'towel', name: 'A Towel', icon: '\uD83E\uDDFB', category: 'home', difficulty: 'easy' },
-  { id: 'candle', name: 'A Candle', icon: '\uD83D\uDD6F\uFE0F', category: 'home', difficulty: 'medium' },
   { id: 'remote', name: 'A TV Remote', icon: '\uD83D\uDCFA', category: 'home', difficulty: 'easy' },
   { id: 'umbrella', name: 'An Umbrella', icon: '\u2602\uFE0F', category: 'home', difficulty: 'medium' },
-  { id: 'keys', name: 'Your Keys', icon: '\uD83D\uDD11', category: 'home', difficulty: 'medium' },
-  { id: 'mirror', name: 'A Mirror', icon: '\uD83E\uDE9E', category: 'home', difficulty: 'medium' },
   { id: 'stuffed-animal', name: 'A Stuffed Animal', icon: '\uD83E\uDDF8', category: 'home', difficulty: 'hard' },
-  { id: 'flashlight', name: 'A Flashlight', icon: '\uD83D\uDD26', category: 'home', difficulty: 'hard' },
-  { id: 'battery', name: 'A Battery', icon: '\uD83D\uDD0B', category: 'home', difficulty: 'hard' },
-  { id: 'rubber-band', name: 'A Rubber Band', icon: '\u27B0', category: 'home', difficulty: 'hard' },
   // Kitchen
   { id: 'cup', name: 'A Cup / Mug', icon: '\u2615', category: 'kitchen', difficulty: 'easy' },
   { id: 'spoon', name: 'A Spoon', icon: '\uD83E\uDD44', category: 'kitchen', difficulty: 'easy' },
   { id: 'fork', name: 'A Fork', icon: '\uD83C\uDF74', category: 'kitchen', difficulty: 'easy' },
-  { id: 'plate', name: 'A Plate', icon: '\uD83C\uDF7D\uFE0F', category: 'kitchen', difficulty: 'medium' },
-  { id: 'bottle', name: 'A Water Bottle', icon: '\uD83C\uDF76', category: 'kitchen', difficulty: 'easy' },
+  { id: 'plate', name: 'A Plate / Bowl', icon: '\uD83C\uDF7D\uFE0F', category: 'kitchen', difficulty: 'medium' },
+  { id: 'bottle', name: 'A Bottle', icon: '\uD83C\uDF76', category: 'kitchen', difficulty: 'easy' },
   { id: 'fruit', name: 'A Piece of Fruit', icon: '\uD83C\uDF4E', category: 'kitchen', difficulty: 'medium' },
   { id: 'banana', name: 'A Banana', icon: '\uD83C\uDF4C', category: 'kitchen', difficulty: 'medium' },
   // Bathroom
   { id: 'toothbrush', name: 'A Toothbrush', icon: '\uD83E\uDEA5', category: 'bathroom', difficulty: 'medium' },
-  { id: 'soap', name: 'A Bar of Soap', icon: '\uD83E\uDDFC', category: 'bathroom', difficulty: 'medium' },
-  { id: 'comb', name: 'A Comb / Brush', icon: '\uD83E\uDEB6', category: 'bathroom', difficulty: 'hard' },
   // Desk
   { id: 'book', name: 'A Book', icon: '\uD83D\uDCD6', category: 'desk', difficulty: 'easy' },
-  { id: 'pen', name: 'A Pen', icon: '\uD83D\uDD8A\uFE0F', category: 'desk', difficulty: 'medium' },
   { id: 'notebook', name: 'A Notebook', icon: '\uD83D\uDCD3', category: 'desk', difficulty: 'easy' },
   { id: 'scissors', name: 'Scissors', icon: '\u2702\uFE0F', category: 'desk', difficulty: 'hard' },
-  { id: 'headphones', name: 'Headphones', icon: '\uD83C\uDFA7', category: 'desk', difficulty: 'medium' },
-  { id: 'charger', name: 'A Phone Charger', icon: '\uD83D\uDD0C', category: 'desk', difficulty: 'medium' },
   { id: 'mouse', name: 'A Computer Mouse', icon: '\uD83D\uDDB1\uFE0F', category: 'desk', difficulty: 'medium' },
-  { id: 'wallet', name: 'Your Wallet', icon: '\uD83D\uDC5B', category: 'personal', difficulty: 'medium' },
-  { id: 'paperclip', name: 'A Paperclip', icon: '\uD83D\uDCCE', category: 'desk', difficulty: 'hard' },
-  { id: 'stapler', name: 'A Stapler', icon: '\uD83D\uDCCC', category: 'desk', difficulty: 'hard' },
 ];
 
 const EXERCISES = [
@@ -1655,27 +1633,13 @@ $('#btn-start-challenge').addEventListener('click', () => {
 
 // Map item IDs to COCO-SSD class labels they should match
 const ITEM_COCO_LABELS = {
-  shoe: null, // not in COCO — use scene-change fallback
-  sock: null,
-  hat: null,
-  jacket: null,
-  sunglasses: null,
   watch: ['clock'],
   backpack: ['backpack'],
   scarf: ['tie'],
-  belt: null,
   plant: ['potted plant'],
-  pillow: null,
-  towel: null,
-  candle: null,
   remote: ['remote'],
   umbrella: ['umbrella'],
-  keys: null,
-  mirror: null,
   'stuffed-animal': ['teddy bear'],
-  flashlight: null,
-  battery: null,
-  'rubber-band': null,
   cup: ['cup'],
   spoon: ['spoon'],
   fork: ['fork'],
@@ -1684,18 +1648,10 @@ const ITEM_COCO_LABELS = {
   fruit: ['apple', 'orange', 'banana'],
   banana: ['banana'],
   toothbrush: ['toothbrush'],
-  soap: null,
-  comb: null,
   book: ['book'],
-  pen: null,
   notebook: ['book'],
   scissors: ['scissors'],
-  headphones: null,
-  charger: null,
   mouse: ['mouse'],
-  wallet: null,
-  paperclip: null,
-  stapler: null,
 };
 
 let cocoModel = null;
@@ -1704,7 +1660,6 @@ let cocoModelLoading = false;
 async function loadCocoModel() {
   if (cocoModel) return cocoModel;
   if (cocoModelLoading) {
-    // Wait for in-progress load
     while (cocoModelLoading) await new Promise(r => setTimeout(r, 100));
     return cocoModel;
   }
@@ -1717,10 +1672,6 @@ async function loadCocoModel() {
   }
   cocoModelLoading = false;
   return cocoModel;
-}
-
-function itemUsesML(itemId) {
-  return ITEM_COCO_LABELS[itemId] != null;
 }
 
 async function startFindItemChallenge(alarm) {
@@ -1738,13 +1689,16 @@ async function startFindItemChallenge(alarm) {
     $(`#${id}`).classList.remove('passed');
   });
 
-  const useML = itemUsesML(alarm.item);
   const cocoLabels = ITEM_COCO_LABELS[alarm.item] || [];
   const MIN_CONFIDENCE = 0.55;
 
-  // Always load the ML model — used for detection (ML items) or person rejection (fallback items)
   $('#find-status').textContent = 'LOADING AI MODEL...';
-  let model = await loadCocoModel();
+  const model = await loadCocoModel();
+
+  if (!model) {
+    $('#find-status').textContent = 'AI MODEL FAILED TO LOAD — PLEASE RELOAD';
+    return;
+  }
 
   try {
     await attachCamera(video);
@@ -1756,58 +1710,15 @@ async function startFindItemChallenge(alarm) {
     return;
   }
 
+  $('#find-status').textContent = 'AI READY — SHOW THE ITEM';
+
   const tsInterval = setInterval(() => {
     $('#live-timestamp').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
   }, 1000);
 
   let lastFrame = null, motionDetected = false, holdStartTime = null, itemConfirmed = false;
   const HOLD_DURATION = 3000;
-  let detecting = false; // Prevent overlapping ML calls
-
-  // Scene-change baseline for non-ML items
-  const BASELINE_FRAMES = 15;
-  const SCENE_CHANGE_THRESHOLD = 0.18;
-  let baselineFrames = [], baselineData = null, frameCount = 0;
-  const useFallback = !useML || !model;
-
-  if (useFallback) {
-    $('#find-status').textContent = 'SCANNING ENVIRONMENT — DO NOT SHOW ITEM YET...';
-  } else {
-    $('#find-status').textContent = 'AI READY — SHOW THE ITEM';
-  }
-
-  function buildBaseline() {
-    const len = baselineFrames[0].data.length;
-    const avg = new Uint8ClampedArray(len);
-    for (let i = 0; i < len; i += 4) {
-      let rSum = 0, gSum = 0, bSum = 0;
-      for (const bf of baselineFrames) { rSum += bf.data[i]; gSum += bf.data[i + 1]; bSum += bf.data[i + 2]; }
-      avg[i] = rSum / baselineFrames.length;
-      avg[i + 1] = gSum / baselineFrames.length;
-      avg[i + 2] = bSum / baselineFrames.length;
-      avg[i + 3] = 255;
-    }
-    return { data: avg, width: baselineFrames[0].width, height: baselineFrames[0].height };
-  }
-
-  function hasSceneChange(frame) {
-    if (!baselineData) return false;
-    const w = frame.width, h = frame.height;
-    const cx1 = Math.floor(w * 0.2), cx2 = Math.floor(w * 0.8);
-    const cy1 = Math.floor(h * 0.2), cy2 = Math.floor(h * 0.8);
-    let changed = 0, total = 0;
-    for (let y = cy1; y < cy2; y += 3) {
-      for (let x = cx1; x < cx2; x += 3) {
-        total++;
-        const i = (y * w + x) * 4;
-        const diff = Math.abs(frame.data[i] - baselineData.data[i])
-          + Math.abs(frame.data[i + 1] - baselineData.data[i + 1])
-          + Math.abs(frame.data[i + 2] - baselineData.data[i + 2]);
-        if (diff > 60) changed++;
-      }
-    }
-    return changed / total > SCENE_CHANGE_THRESHOLD;
-  }
+  let detecting = false;
 
   function drawDetectionBox(prediction) {
     const [x, y, w, h] = prediction.bbox;
@@ -1826,7 +1737,6 @@ async function startFindItemChallenge(alarm) {
   async function processFrame() {
     if (itemConfirmed) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    frameCount++;
 
     // Motion detection
     const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1840,29 +1750,24 @@ async function startFindItemChallenge(alarm) {
     }
     lastFrame = frame;
 
-    // ---- ML detection path ----
-    if (useML && model && !detecting) {
+    if (!detecting) {
       detecting = true;
       try {
         const predictions = await model.detect(video);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // redraw clean frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Find the best matching prediction for the target item
         let bestMatch = null;
         let bestWrongLabel = null;
         for (const pred of predictions) {
-          if (pred.score < 0.3) continue; // ignore very low confidence
+          if (pred.score < 0.3) continue;
           if (cocoLabels.includes(pred.class) && pred.score >= MIN_CONFIDENCE) {
             if (!bestMatch || pred.score > bestMatch.score) bestMatch = pred;
           } else if (pred.class !== 'person' && pred.score >= MIN_CONFIDENCE) {
-            // Track highest-confidence wrong item to warn the user
             if (!bestWrongLabel || pred.score > bestWrongLabel.score) bestWrongLabel = pred;
           }
         }
 
-        if (bestMatch) {
-          drawDetectionBox(bestMatch);
-        }
+        if (bestMatch) drawDetectionBox(bestMatch);
 
         if (bestMatch && motionDetected) {
           if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
@@ -1892,68 +1797,6 @@ async function startFindItemChallenge(alarm) {
         console.error('Detection error:', e);
       }
       detecting = false;
-      requestAnimationFrame(processFrame);
-      return;
-    }
-
-    // ---- Fallback: scene-change + anti-person check for items COCO-SSD can't classify ----
-    if (useFallback) {
-      if (frameCount <= BASELINE_FRAMES) {
-        baselineFrames.push(frame);
-        const pct = Math.round((frameCount / BASELINE_FRAMES) * 100);
-        $('#find-status').textContent = `SCANNING ENVIRONMENT... ${pct}%`;
-        if (frameCount === BASELINE_FRAMES) {
-          baselineData = buildBaseline();
-          baselineFrames = [];
-          $('#find-status').textContent = 'READY — NOW SHOW THE ITEM';
-        }
-        requestAnimationFrame(processFrame);
-        return;
-      }
-
-      const sceneChanged = hasSceneChange(frame);
-
-      // Use COCO-SSD to reject if the camera mainly sees a person (feet, body, etc.)
-      if (sceneChanged && motionDetected && !detecting) {
-        detecting = true;
-        let personBlocking = false;
-        if (model) {
-          try {
-            const predictions = await model.detect(video);
-            const personPreds = predictions.filter(p => p.class === 'person' && p.score >= 0.3);
-            if (personPreds.length > 0) {
-              // Any person detection blocks — even partial body/feet
-              personBlocking = true;
-            }
-          } catch (_) {}
-        }
-        detecting = false;
-
-        if (personBlocking) {
-          if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
-          $('#find-status').textContent = 'PERSON DETECTED — SHOW THE ITEM, NOT YOURSELF';
-          requestAnimationFrame(processFrame);
-          return;
-        }
-
-        if (!holdStartTime) { holdStartTime = Date.now(); $('#find-countdown').classList.remove('hidden'); }
-        const elapsed = Date.now() - holdStartTime;
-        const remaining = Math.ceil((HOLD_DURATION - elapsed) / 1000);
-        $('#find-countdown').textContent = remaining;
-        $('#find-status').textContent = `CHANGE DETECTED — HOLD STEADY... ${remaining}s`;
-        if (elapsed >= HOLD_DURATION) {
-          itemConfirmed = true;
-          markCheck('check-item');
-          clearInterval(tsInterval);
-          $('#find-countdown').textContent = '\u2713';
-          $('#find-status').textContent = 'ITEM CONFIRMED';
-          setTimeout(() => { stopCamera(); onChallengeStepDone(); }, 1000);
-          return;
-        }
-      } else if (!sceneChanged) {
-        if (holdStartTime) { holdStartTime = null; $('#find-countdown').classList.add('hidden'); }
-        $('#find-status').textContent = 'BRING THE ITEM CLOSER — MUST BE CLEARLY VISIBLE';
-      }
     }
 
     requestAnimationFrame(processFrame);
